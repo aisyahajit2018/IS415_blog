@@ -20,7 +20,9 @@ knitr::opts_chunk$set(echo = FALSE)
 
 This code chunk performs 3 tasks:
 
-- create a list of R packages needed.
+- Create a list of R packages needed
+- Install the R packages
+- Load the R packages
 ```{r echo=TRUE, eval=TRUE}
 packages <- c('sf', 'tidyverse')
 for(p in packages){

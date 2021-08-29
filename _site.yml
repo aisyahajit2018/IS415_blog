@@ -8,8 +8,17 @@ navbar:
     - text: "Take-home Exercise"
       menu:
       - text: "Take-home Exercise 1"
+        href: 
+      - text: "Take-home Exercise 2"
         href:
-    - text: "In-class Exercise"
+      - text: "Take-home Exercise 3"
+        href:
+    - text: "Hands-on Exercise"
+      menu:
+        - text: "Hands-on Exercise 2"
+          href: hands-on-exercise-2.html
+        - text: "Hands-on Exercise 3"
+          href: hands-on-exercise-3.html
       href: index.html
     - text: "About"
       href: about.html
