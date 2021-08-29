@@ -1,7 +1,7 @@
 ---
 title: "Hands-on Exercise 3"
 description: |
-  A short description of the post.
+  In this hands-on exercise, I learn how to plot functional and truthful choropleth maps by using an R package called tmap package.
 author:
   - name: Nor Aisyah
     url: https://www.linkedin.com/in/nor-aisyah/
