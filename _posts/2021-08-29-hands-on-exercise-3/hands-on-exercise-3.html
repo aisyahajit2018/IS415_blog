@@ -1478,7 +1478,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </div>
 
 <div class="d-article">
-<h2 id="packages">Packages</h2>
+<h2 id="importing-packages">1. Importing Packages</h2>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>packages</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'sf'</span>, <span class='st'>'tmap'</span>, <span class='st'>'tidyverse'</span><span class='op'>)</span>
@@ -1491,7 +1491,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </code></pre>
 </div>
 </div>
-<h2 id="importing-geospatial-data-into-r">Importing Geospatial Data into R</h2>
+<h2 id="importing-data-in-r">2. Importing data in R</h2>
+<h3 id="importing-geospatial-data-into-r">2.1 Importing Geospatial Data into R</h3>
 <p>The code chunk below uses the <em>st_read()</em> function of <strong>sf</strong> package to import <code>MP14_SUBZONE_WEB_PL</code> shapefile into R as a simple feature data frame called <code>mpsz</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <pre><code>Reading layer `MP14_SUBZONE_WEB_PL&#39; from data source 
@@ -1503,7 +1504,7 @@ Dimension:     XY
 Bounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33
 Projected CRS: SVY21</code></pre>
 </div>
-<p>Examine the content of <code>mpsz</code> by using the code chunk below.</p>
+<h3 id="examine-the-content-of-mpsz">2.2 Examine the content of <code>mpsz</code></h3>
 <div class="layout-chunk" data-layout="l-body">
 <pre><code>Simple feature collection with 323 features and 15 fields
 Geometry type: MULTIPOLYGON
@@ -1556,110 +1557,121 @@ First 10 features:
 9   1084792.3 MULTIPOLYGON (((20996.49 30...
 10   631644.3 MULTIPOLYGON (((24472.11 29...</code></pre>
 </div>
-<h2 id="importing-attribute-data-into-r">Importing Attribute Data into R</h2>
+<h3 id="import-attribute-data-into-r">2.3 Import Attribute Data into R</h3>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>popdata</span> <span class='op'>&lt;-</span> <span class='fu'>read_csv</span><span class='op'>(</span><span class='st'>"data/aspatial/respopagesextod2011to2020.csv"</span><span class='op'>)</span>
 </code></pre>
 </div>
 </div>
-<h2 id="data-preparation">Data Preparation</h2>
+<h2 id="data-preparation">2.4 Data Preparation</h2>
+<p>Prepare data table with variables like: -PA, SZ, YOUNG, ECONOMY ACTIVE, AGED, TOTAL, DEPENDENCY -(PA and SZ fields can be used as unique identifiers to geocode to MP14_SUBZONE_WEB_PL shapefile)*</p>
+<h3 id="data-wrangling">2.4.1 Data Wrangling</h3>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
-<p>Joining the attribute data and geospatial data</p>
+<h3 id="join-the-attribute-data-and-geospatial-data">2.5 Join the attribute data and geospatial data</h3>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
-<p>Join the geographical data and attribute table</p>
+<h3 id="join-the-geographical-data-and-attribute-table">2.6 Join the geographical data and attribute table</h3>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
-<p>Draw a cartographic standard choropleth map as shown below.</p>
+<h2 id="choropleth-mapping-geospatial-data-using-tmap">3.0 Choropleth Mapping Geospatial Data Using tmap</h2>
+<h3 id="draw-a-cartographic-standard-choropleth-map-as-shown-below.">3.1 Draw a cartographic standard choropleth map as shown below.</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-8-1.png" width="624" /></p>
 </div>
-<p>Creating a choropleth map by using <em>tmap</em>’s elements</p>
+<h3 id="create-choropleth-map-by-using-tmaps-elements">3.2 Create choropleth map by using <em>tmap</em>’s elements</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-9-1.png" width="624" /></p>
 </div>
-<p>Drawing a base map</p>
+<h3 id="drawing-a-base-map">3.3 Drawing a base map</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-10-1.png" width="624" /></p>
 </div>
-<p>Drawing a choropleth map using <em>tm_polygons()</em></p>
+<h3 id="drawing-a-choropleth-map-using-tm_polygons">3.4 Drawing a choropleth map using <em>tm_polygons()</em></h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-11-1.png" width="624" /></p>
 </div>
-<p>Drawing a choropleth map using <em>tm_fill()</em> and *tm_border()**</p>
+<h3 id="drawing-a-choropleth-map-using-tm_fill-and-tm_border">3.5 Drawing a choropleth map using <em>tm_fill()</em> and *tm_border()**</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-12-1.png" width="624" /></p>
 </div>
-<p>add the boundary of the planning subzones</p>
+<h3 id="add-the-boundary-of-the-planning-subzones">3.6 Add the boundary of the planning subzones</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-13-1.png" width="624" /></p>
 </div>
-<p>Plotting choropleth maps with built-in classification methods</p>
-<h3 id="quantile">quantile</h3>
+<h3 id="plotting-choropleth-maps-with-built-in-classification-methods">3.7 Plotting choropleth maps with built-in classification methods</h3>
+<h3 id="quantile-data-classification">3.7.1 <strong>Quantile</strong> data classification</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-14-1.png" width="624" /></p>
 </div>
-<h3 id="equal">equal</h3>
+<h3 id="equal-data-classification">3.7.2 <strong>Equal</strong> data classification</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-15-1.png" width="624" /></p>
 </div>
-<p>the descriptive statistics of <strong>DEPENDENCY</strong> field</p>
+<h3 id="plotting-choropleth-map-with-custom-break">3.7.3 PLOTTING CHOROPLETH MAP WITH CUSTOM BREAK</h3>
+<h3 id="show-descriptive-statistics-of-dependency-field">3.7.4 Show descriptive statistics of <strong>DEPENDENCY</strong> field</h3>
 <div class="layout-chunk" data-layout="l-body">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA&#39;s 
  0.0000  0.6519  0.7025  0.7742  0.7645 19.0000      92 </code></pre>
 </div>
-<p>plot the choropleth map</p>
+<h3 id="plot-the-choropleth-map">3.7.5 Plot the choropleth map</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-17-1.png" width="624" /></p>
 </div>
-<p>change the colour</p>
+<h1 id="changing-colour-scheme">4.0 Changing Colour Scheme</h1>
+<h1 id="change-the-colour">4.1 Change the colour</h1>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-18-1.png" width="624" /></p>
 </div>
-<p>reverse the colour shading</p>
+<h1 id="reverse-the-colour-shading">4.2 Reverse the colour shading</h1>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-19-1.png" width="624" /></p>
 </div>
-<p>map legend</p>
+<h1 id="map-layouts">4.2 Map layouts</h1>
+<h1 id="map-legend">4.2.1 Map legend</h1>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-20-1.png" width="624" /></p>
 </div>
-<p>classic map style</p>
+<h1 id="classic-map-style">4.2.2 Classic map style</h1>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-21-1.png" width="624" /></p>
 </div>
-<p>draw other map furniture</p>
+<h1 id="draw-other-map-furniture-cartographic">4.2.3 Draw other map furniture (Cartographic)</h1>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-22-1.png" width="624" /></p>
 </div>
-<p>reset the default style</p>
+<h1 id="reset-the-default-style">4.2.4 Reset the default style</h1>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
-<p>small multiple choropleth maps are created defining <strong><em>ncols</em></strong> in <strong>tm_fill()</strong></p>
+<h2 id="drawing-small-multiple-choropleth-maps">4.3 Drawing Small Multiple Choropleth Maps</h2>
+<h2 id="small-multiple-choropleth-maps-are-created-defining-ncols-in-tm_fill">4.3.1 Small multiple choropleth maps are created defining <strong><em>ncols</em></strong> in <strong>tm_fill()</strong></h2>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-24-1.png" width="624" /></p>
 </div>
-<p>small multiple choropleth maps are created by assigning multiple values to at least one of the aesthetic arguments</p>
+<h2 id="small-multiple-choropleth-maps-are-created-by-assigning-multiple-values-to-at-least-one-of-the-aesthetic-arguments">4.3.2 Small multiple choropleth maps are created by assigning multiple values to at least one of the aesthetic arguments</h2>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-25-1.png" width="624" /></p>
 </div>
-<p>multiple small choropleth maps are created by using <strong>tm_facets()</strong>.</p>
+<h2 id="multiple-small-choropleth-maps-are-created-by-using-tm_facets.">4.3.3 Multiple small choropleth maps are created by using <strong>tm_facets()</strong>.</h2>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-26-1.png" width="624" /></p>
 </div>
-<p>multiple small choropleth maps are created by creating multiple stand-alone maps with <strong>tmap_arrange()</strong>.</p>
+<h2 id="multiple-small-choropleth-maps-are-created-by-creating-multiple-stand-alone-maps-with-tmap_arrange.">4.3.4 Multiple small choropleth maps are created by creating multiple stand-alone maps with <strong>tmap_arrange()</strong>.</h2>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-27-1.png" width="624" /></p>
 </div>
-<p>use selection funtion to map spatial objects meeting the selection criterion.</p>
+<h2 id="mappping-spatial-object-meeting-a-selection-criterion">4.4 Mappping Spatial Object Meeting a Selection Criterion</h2>
+<h3 id="use-selection-funtion-to-map-spatial-objects-meeting-the-selection-criterion.">4.4.1 Use selection funtion to map spatial objects meeting the selection criterion.</h3>
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-28-1.png" width="624" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
 </div>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->

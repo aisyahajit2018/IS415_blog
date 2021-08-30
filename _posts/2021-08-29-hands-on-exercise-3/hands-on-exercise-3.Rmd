@@ -16,7 +16,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## Packages
+## 1. Importing Packages
 ```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
 packages = c('sf', 'tmap', 'tidyverse')
 for (p in packages){
@@ -27,7 +27,10 @@ for (p in packages){
 }
 ```
 
-## Importing Geospatial Data into R
+
+## 2. Importing data in R
+
+### 2.1 Importing Geospatial Data into R
 
 The code chunk below uses the *st_read()* function of **sf** package to import `MP14_SUBZONE_WEB_PL` shapefile into R as a simple feature data frame called `mpsz`.   
 
@@ -37,7 +40,7 @@ mpsz <- st_read(dsn = "data/geospatial",
 ```
 
 
-Examine the content of `mpsz` by using the code chunk below.
+### 2.2 Examine the content of `mpsz`
 
 
 ```{r}
@@ -45,12 +48,20 @@ mpsz
 ```
 
 
-## Importing Attribute Data into R
+### 2.3 Import Attribute Data into R
+
+
 ```{r, echo=TRUE, message=FALSE}
 popdata <- read_csv("data/aspatial/respopagesextod2011to2020.csv")
 ```
 
-## Data Preparation
+## 2.4 Data Preparation
+Prepare data table with variables like:
+-PA, SZ, YOUNG, ECONOMY ACTIVE, AGED, TOTAL, DEPENDENCY
+-(PA and SZ fields can be used as unique identifiers to geocode to MP14_SUBZONE_WEB_PL shapefile)*
+
+### 2.4.1 Data Wrangling
+
 ```{r}
 popdata2020 <- popdata %>%
   filter(Time == 2020) %>%
@@ -73,7 +84,7 @@ mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)
 ```
 
 
-Joining the attribute data and geospatial data
+### 2.5 Join the attribute data and geospatial data
 
 
 ```{r}
@@ -84,7 +95,7 @@ popdata2020 <- popdata2020 %>%
 ```
 
 
-Join the geographical data and attribute table
+### 2.6 Join the geographical data and attribute table
 
 
 ```{r}
@@ -93,9 +104,9 @@ mpsz_pop2020 <- left_join(mpsz, popdata2020,
 ```
 
 
+## 3.0 Choropleth Mapping Geospatial Data Using tmap
 
-Draw a cartographic standard choropleth map as shown below.
-
+### 3.1 Draw a cartographic standard choropleth map as shown below.
 
 
 ```{r}
@@ -105,7 +116,7 @@ qtm(mpsz_pop2020,
 ```
 
 
-Creating a choropleth map by using *tmap*'s elements
+### 3.2 Create choropleth map by using *tmap*'s elements
 
 
 ```{r}
@@ -129,7 +140,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-Drawing a base map
+### 3.3 Drawing a base map
 
 
 ```{r}
@@ -138,7 +149,7 @@ tm_shape(mpsz_pop2020) +
 ```
 
 
-Drawing a choropleth map using *tm_polygons()*
+### 3.4 Drawing a choropleth map using *tm_polygons()*
 
 
 ```{r}
@@ -147,7 +158,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-Drawing a choropleth map using *tm_fill()* and *tm_border()**
+### 3.5 Drawing a choropleth map using *tm_fill()* and *tm_border()**
 
 
 ```{r}
@@ -156,7 +167,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-add the boundary of the planning subzones
+### 3.6 Add the boundary of the planning subzones
 
 
 ```{r}
@@ -166,10 +177,10 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-Plotting choropleth maps with built-in classification methods
+### 3.7 Plotting choropleth maps with built-in classification methods
 
 
-### quantile
+### 3.7.1 **Quantile** data classification
 
 
 ```{r}
@@ -181,7 +192,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-### equal
+###  3.7.2 **Equal** data classification
 
 
 ```{r}
@@ -193,7 +204,9 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-the descriptive statistics of **DEPENDENCY** field
+###  3.7.3 PLOTTING CHOROPLETH MAP WITH CUSTOM BREAK
+
+### 3.7.4 Show descriptive statistics of **DEPENDENCY** field
 
 
 ```{r}
@@ -201,7 +214,7 @@ summary(mpsz_pop2020$DEPENDENCY)
 ```
 
 
-plot the choropleth map
+### 3.7.5 Plot the choropleth map
 
 
 ```{r}
@@ -212,7 +225,9 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-change the colour
+# 4.0 Changing Colour Scheme
+
+# 4.1 Change the colour
 
 
 ```{r}
@@ -225,7 +240,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-reverse the colour shading
+# 4.2 Reverse the colour shading
 
 
 ```{r}
@@ -237,8 +252,9 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-map legend
+# 4.2 Map layouts
 
+# 4.2.1 Map legend
 
 ```{r}
 tm_shape(mpsz_pop2020)+
@@ -260,7 +276,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-classic map style
+# 4.2.2 Classic map style
 
 
 ```{r}
@@ -273,8 +289,8 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-draw other map furniture
-
+# 4.2.3 Draw other map furniture (Cartographic)
+ 
 
 ```{r}
 tm_shape(mpsz_pop2020)+
@@ -297,7 +313,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-reset the default style
+# 4.2.4 Reset the default style
 
 
 ```{r}
@@ -305,7 +321,9 @@ tmap_style("white")
 ```
 
 
-small multiple choropleth maps are created defining ***ncols*** in **tm_fill()**
+## 4.3 Drawing Small Multiple Choropleth Maps 
+
+## 4.3.1 Small multiple choropleth maps are created defining ***ncols*** in **tm_fill()**
 
 
 ```{r}
@@ -319,7 +337,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-small multiple choropleth maps are created by assigning multiple values to at least one of the aesthetic arguments
+## 4.3.2 Small multiple choropleth maps are created by assigning multiple values to at least one of the aesthetic arguments
 
 
 ```{r}
@@ -331,7 +349,7 @@ tm_shape(mpsz_pop2020)+
 ```
 
 
-multiple small choropleth maps are created by using **tm_facets()**. 
+## 4.3.3 Multiple small choropleth maps are created by using **tm_facets()**. 
 
 
 ```{r}
@@ -350,7 +368,7 @@ tm_shape(mpsz_pop2020) +
 ```
 
 
-multiple small choropleth maps are created by creating multiple stand-alone maps with **tmap_arrange()**. 
+## 4.3.4 Multiple small choropleth maps are created by creating multiple stand-alone maps with **tmap_arrange()**. 
 
 
 ```{r}
@@ -366,8 +384,9 @@ tmap_arrange(youngmap, agedmap, asp=1, ncol=2)
 ```
 
 
+## 4.4 Mappping Spatial Object Meeting a Selection Criterion
 
-use selection funtion to map spatial objects meeting the selection criterion. 
+### 4.4.1 Use selection funtion to map spatial objects meeting the selection criterion. 
 
 
 ```{r}
@@ -387,3 +406,14 @@ tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
 ```
 
 
+
+```{r echo= FALSE, fig.width=5, fig.height=5}
+# ggplot(data=mpsz3414, 
+#        aes(y=`PreSch Count`,
+#          x=as.numeric(`Presch Density`)))+
+#   geom_point(color="black", 
+#              fill="light blue") +  xlim(0, 60) + ylim(0, 60) + labs(title="",
+#         x="Pre-school density (per km sq)",
+#         y="Pre-school count")
+
+```
