@@ -34,7 +34,7 @@ for (p in packages){
 
 The code chunk below uses the *st_read()* function of **sf** package to import `MP14_SUBZONE_WEB_PL` shapefile into R as a simple feature data frame called `mpsz`.   
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 mpsz <- st_read(dsn = "data/geospatial", 
                 layer = "MP14_SUBZONE_WEB_PL")
 ```
@@ -43,7 +43,7 @@ mpsz <- st_read(dsn = "data/geospatial",
 ### 2.2 Examine the content of `mpsz`
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 mpsz
 ```
 
@@ -62,7 +62,7 @@ Prepare data table with variables like:
 
 ### 2.4.1 Data Wrangling
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 popdata2020 <- popdata %>%
   filter(Time == 2020) %>%
   group_by(PA, SZ, AG) %>%
@@ -86,8 +86,8 @@ mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)
 
 ### 2.5 Join the attribute data and geospatial data
 
-
-```{r}
+- Must convert to uppercase since one column is in uppercase and the other is not. 
+```{r echo=TRUE, eval=TRUE}
 popdata2020 <- popdata2020 %>%
   mutate_at(.vars = vars(PA, SZ), 
           .funs = funs(toupper)) %>%
@@ -98,10 +98,17 @@ popdata2020 <- popdata2020 %>%
 ### 2.6 Join the geographical data and attribute table
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 mpsz_pop2020 <- left_join(mpsz, popdata2020,
                           by = c("SUBZONE_N" = "SZ"))
 ```
+
+
+
+```{r}
+mpszpop2020 <- write_rds(mpsz_pop2020, "data/rds/mpszpop2020.rds")
+```
+
 
 
 ## 3.0 Choropleth Mapping Geospatial Data Using tmap
@@ -109,7 +116,7 @@ mpsz_pop2020 <- left_join(mpsz, popdata2020,
 ### 3.1 Draw a cartographic standard choropleth map as shown below.
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tmap_mode("plot")
 qtm(mpsz_pop2020, 
     fill = "DEPENDENCY")
@@ -119,7 +126,7 @@ qtm(mpsz_pop2020,
 ### 3.2 Create choropleth map by using *tmap*'s elements
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY", 
           style = "quantile", 
@@ -143,7 +150,7 @@ tm_shape(mpsz_pop2020)+
 ### 3.3 Drawing a base map
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020) +
   tm_polygons()
 ```
@@ -152,7 +159,7 @@ tm_shape(mpsz_pop2020) +
 ### 3.4 Drawing a choropleth map using *tm_polygons()*
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_polygons("DEPENDENCY")
 ```
@@ -161,7 +168,7 @@ tm_shape(mpsz_pop2020)+
 ### 3.5 Drawing a choropleth map using *tm_fill()* and *tm_border()**
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY")
 ```
@@ -170,7 +177,7 @@ tm_shape(mpsz_pop2020)+
 ### 3.6 Add the boundary of the planning subzones
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY") +
   tm_borders(lwd = 0.1,  alpha = 1)
@@ -183,7 +190,7 @@ tm_shape(mpsz_pop2020)+
 ### 3.7.1 **Quantile** data classification
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
           n = 5,
@@ -195,7 +202,7 @@ tm_shape(mpsz_pop2020)+
 ###  3.7.2 **Equal** data classification
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
           n = 5,
@@ -209,7 +216,7 @@ tm_shape(mpsz_pop2020)+
 ### 3.7.4 Show descriptive statistics of **DEPENDENCY** field
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 summary(mpsz_pop2020$DEPENDENCY)
 ```
 
@@ -217,7 +224,7 @@ summary(mpsz_pop2020$DEPENDENCY)
 ### 3.7.5 Plot the choropleth map
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
           breaks = c(0, 0.60, 0.70, 0.80, 0.90, 1.00)) +
@@ -230,7 +237,7 @@ tm_shape(mpsz_pop2020)+
 # 4.1 Change the colour
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
           n = 6,
@@ -243,7 +250,7 @@ tm_shape(mpsz_pop2020)+
 # 4.2 Reverse the colour shading
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
           style = "quantile",
@@ -256,7 +263,7 @@ tm_shape(mpsz_pop2020)+
 
 # 4.2.1 Map legend
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY", 
           style = "jenks", 
@@ -279,7 +286,7 @@ tm_shape(mpsz_pop2020)+
 # 4.2.2 Classic map style
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY", 
           style = "quantile", 
@@ -292,7 +299,7 @@ tm_shape(mpsz_pop2020)+
 # 4.2.3 Draw other map furniture (Cartographic)
  
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY", 
           style = "quantile", 
@@ -316,7 +323,7 @@ tm_shape(mpsz_pop2020)+
 # 4.2.4 Reset the default style
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tmap_style("white")
 ```
 
@@ -326,7 +333,7 @@ tmap_style("white")
 ## 4.3.1 Small multiple choropleth maps are created defining ***ncols*** in **tm_fill()**
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill(c("YOUNG", "AGED"),
           style = "equal", 
@@ -340,7 +347,7 @@ tm_shape(mpsz_pop2020)+
 ## 4.3.2 Small multiple choropleth maps are created by assigning multiple values to at least one of the aesthetic arguments
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+ 
   tm_polygons(c("DEPENDENCY","AGED"),
           style = c("equal", "quantile"), 
@@ -352,7 +359,7 @@ tm_shape(mpsz_pop2020)+
 ## 4.3.3 Multiple small choropleth maps are created by using **tm_facets()**. 
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020) +
   tm_fill("DEPENDENCY",
           style = "quantile",
@@ -371,7 +378,7 @@ tm_shape(mpsz_pop2020) +
 ## 4.3.4 Multiple small choropleth maps are created by creating multiple stand-alone maps with **tmap_arrange()**. 
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 youngmap <- tm_shape(mpsz_pop2020)+ 
   tm_polygons("YOUNG", 
               style = "quantile", 
@@ -384,12 +391,12 @@ tmap_arrange(youngmap, agedmap, asp=1, ncol=2)
 ```
 
 
-## 4.4 Mappping Spatial Object Meeting a Selection Criterion
+## 4.4 Mapping Spatial Object Meeting a Selection Criterion
 
 ### 4.4.1 Use selection funtion to map spatial objects meeting the selection criterion. 
 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
   tm_fill("DEPENDENCY", 
           style = "quantile", 
@@ -407,13 +414,4 @@ tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
 
 
 
-```{r echo= FALSE, fig.width=5, fig.height=5}
-# ggplot(data=mpsz3414, 
-#        aes(y=`PreSch Count`,
-#          x=as.numeric(`Presch Density`)))+
-#   geom_point(color="black", 
-#              fill="light blue") +  xlim(0, 60) + ylim(0, 60) + labs(title="",
-#         x="Pre-school density (per km sq)",
-#         y="Pre-school count")
 
-```

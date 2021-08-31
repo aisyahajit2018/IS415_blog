@@ -168,6 +168,8 @@ mpsz3414$Area <- mpsz3414 %>% st_area()
 ```
 
 
+## Multiply to show in km^2
+
 ```{r echo=TRUE, eval=TRUE}
 mpsz3414 <- mpsz3414 %>% mutate(`PreSch Density` = `PreSch Count`/Area * 1000000)
 ```
@@ -190,6 +192,18 @@ ggplot(data=mpsz3414,
        subtitle= "There are many planning sub-zones with a single pre-school, on the other hand, \nthere are two planning sub-zones with at least 20 pre-schools",
       x = "Pre-school density (per km sq)",
       y = "Frequency")
+```
+
+
+```{r echo= FALSE, fig.width=5, fig.height=5}
+ggplot(data=mpsz3414,
+       aes(y=`PreSch Count`,
+         x=as.numeric(`Presch Density`)))+
+  geom_point(color="black",
+             fill="light blue") +  xlim(0, 60) + ylim(0, 60) + labs(title="",
+        x="Pre-school density (per km sq)",
+        y="Pre-school count")
+
 ```
 
 Done! :)

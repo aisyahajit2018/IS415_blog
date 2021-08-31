@@ -1,0 +1,346 @@
+---
+title: "In-class Exercise 3"
+description: |
+  A short description of the post.
+author:
+  - name: Nor Aisyah
+    url: https://www.linkedin.com/in/nor-aisyah/
+date: 08-30-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# 1. Installing and loading required packages
+```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+packages = c('sf', 'tmap', 'tidyverse')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+# 2. Import Data
+```{r echo=TRUE, eval=TRUE}
+mpszpop2020 <- read_rds("data/rds/mpszpop2020.rds")
+```
+
+
+# 3. Plot a quantile map of initial data
+
+- Can see that there are missing values in AGED
+
+```{r echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, fig.retina=3, fig.height=4}
+tm_shape(mpszpop2020)+
+  tm_fill("AGED",
+          n = 6,
+          style = "quantile",
+          palette = "Blues") +
+  tm_borders(alpha = 0.5)
+```
+# 4. Visualise Extreme Values 
+
+## 4.1 Box plot
+ 
+```{r echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, fig.retina=3, fig.align='center', fig.height=5, fig.width=4}
+ggplot(data=mpszpop2020, 
+       aes(x = "", 
+           y = AGED)) +
+  geom_boxplot()
+
+```
+
+
+## 4.2 Percentile Map
+- Usually 6 categories
+- Extreme values are much better highlighted
+ 
+### 4.2.1 Extract a variable from sf data frame
+
+#### 4.2.1.1 Exclude records with NA
+```{r echo=TRUE, eval=TRUE}
+mpszpop2020a <- mpszpop2020 %>%
+  drop_na()
+```
+
+
+#### 4.2.1.2 See range of DEPENDENCY (*Extra: For my understanding*)
+```{r echo=TRUE, eval=TRUE}
+range(mpszpop2020a$DEPENDENCY)
+```
+
+
+#### 4.2.1.3 See quartiles of DEPENDENCY (*Extra: For my understanding*)
+```{r echo=TRUE, eval=TRUE}
+quantile(mpszpop2020a$DEPENDENCY)
+```
+
+#### 4.2.1.4 Defining a different set of quartiles
+```{r echo=TRUE, eval=TRUE}
+percent <- c(0, .01, .1, .5, .9, .99, 1)
+var <- mpszpop2020a["DEPENDENCY"] %>% 
+  st_set_geometry(NULL)
+quantile(var[,1], percent)
+```
+
+
+### 4.2.2 Creating the get.var function
+```{r echo=TRUE, eval=TRUE}
+get.var<-function(vname, df) {
+  v <- df[vname]%>%
+  st_set_geometry(NULL)
+  v <- unname(v[,1])
+  return(v)
+}
+```
+
+
+### 4.2.3 Plotting a percentile map using tmap functions
+
+- This plot has empty holes (because we removed NA)
+- This is what we normally do
+
+```{r echo=TRUE, eval=TRUE}
+percent <- c(0, .01, .1, .5, .9, .99, 1)
+var <- get.var("DEPENDENCY", mpszpop2020a)
+bperc <- quantile(var, percent)
+tm_shape(mpszpop2020a) + 
+  tm_polygons() + 
+  tm_shape(mpszpop2020a) + 
+  tm_fill("DEPENDENCY", 
+          breaks=bperc, 
+          palette="Blues",
+          labels=c("< 1%", "1%-10%", "10%-50%", "50%-90%", "90%-99%", ">99%"))+
+  tm_borders() +
+  tm_layout(title = "Percentile Map", title.position = c("right", "bottom"))
+
+```
+
+
+### 4.2.4 Plotting a percentile map using a function
+
+- This plot will not have empty holes (since we have filled it)
+- The idea is to Plot as a polygon first then the fill function so that won't get awkward spaces after removing NA values
+
+```{r echo=TRUE, eval=TRUE}
+percentmap <- function(vnam, df, legtitle=NA, mtitle="Percentile Map"){
+  percent <- c(0,.01, .1,.5,.9,.99,1)
+  var <- get.var(vnam,df)
+  bperc <- quantile (var, percent)
+  tm_shape (mpszpop2020) + 
+    tm_polygons() + 
+    tm_shape(df)+
+    tm_fill(vnam, title=legtitle, breaks=bperc, palette="Blues", 
+            labels = c("< 1%", "1%-10%", "10%-50%", "50%-90%", "90%-99%", ">99%"))+
+     tm_borders() +
+    tm_layout(title = mtitle, title.position=c("right", "bottom"))
+    
+}
+```
+
+
+#### 4.2.4.1 Test the percentile mapping function - AGED
+```{r echo=TRUE, eval=TRUE}
+percentmap("AGED", mpszpop2020a)
+```
+
+#### 4.2.4.2 Test the percentile mapping function - YOUNG
+```{r echo=TRUE, eval=TRUE}
+percentmap("YOUNG", mpszpop2020a)
+```
+
+## Just for my understanding (to see the difference in map after choosing a different palette): *Please ignore this section*
+### A percentile mapping function (PRGn palette)
+
+```{r echo=TRUE, eval=TRUE}
+
+## Plot as a polygon first 
+# then fill function so that you wont get the awkward spaces after removing NA values
+percentmap <- function(vnam, df, legtitle=NA, mtitle="Percentile Map"){
+  percent <- c(0,.01, .1,.5,.9,.99,1)
+  var <- get.var(vnam,df)
+  bperc <- quantile (var, percent)
+  tm_shape (mpszpop2020) + 
+    tm_polygons() + 
+    tm_shape(df)+
+    tm_fill(vnam, title=legtitle, breaks=bperc, palette="PRGn", 
+            labels = c("< 1%", "1%-10%", "10%-50%", "50%-90%", "90%-99%", ">99%"))+
+     tm_borders() +
+    tm_layout(title = mtitle, title.position=c("right", "bottom"))
+    
+}
+```
+
+
+### Test function
+```{r echo=TRUE, eval=TRUE}
+percentmap("AGED", mpszpop2020a)
+```
+
+
+## 4.3  Box Map 
+- Helps to identify the lower and upper outliers
+
+### 4.3.1 Creating the boxbreaks function
+
+```{r echo=TRUE, eval=TRUE}
+  # identify outliers using upper and lower percentile
+boxbreaks <- function(v,mult=1.5) {
+  qv <- unname(quantile(v))
+  iqr <- qv[4] - qv[2]
+  upfence <- qv[4] + mult * iqr
+  lofence <- qv[2] - mult * iqr
+  # initialize break points vector
+  bb <- vector(mode="numeric",length=7)
+  # logic for lower and upper fences
+  if (lofence < qv[1]) {  # no lower outliers
+    bb[1] <- lofence
+    bb[2] <- floor(qv[1])
+  } else {
+    bb[2] <- lofence
+    bb[1] <- qv[1]
+  }
+  if (upfence > qv[5]) { # no upper outliers
+    bb[7] <- upfence
+    bb[6] <- ceiling(qv[5])
+  } else {
+    bb[6] <- upfence
+    bb[7] <- qv[5]
+  }
+  bb[3:5] <- qv[2:4]
+  return(bb)
+}
+```
+
+
+### 4.3.2 Test the boxbreak function
+```{r echo=TRUE, eval=FALSE}
+var <- get.var("AGED", mpszpop2020a) 
+boxbreaks(var)
+```
+
+### 4.3.3 Ensure that AGED doesn't contain 0 (although already removed previously)
+```{r echo=TRUE, eval=TRUE}
+mpszpop2020a <- mpszpop2020 %>%
+  filter(AGED>=0)
+var <- get.var("AGED", mpszpop2020a)
+boxbreaks(var)
+```
+
+### 4.3.4 Creating *Boxmap* function (This will have holes)
+```{r echo=TRUE, eval=TRUE}
+boxmap <- function(vnam, df, 
+                   legtitle=NA,
+                   mtitle="Box Map",
+                   mult=1.5){
+  var <- get.var(vnam,df)
+  bb <- boxbreaks(var)
+  tm_shape(df) +
+     tm_fill(vnam,title=legtitle,
+             breaks=bb,
+             palette="Blues",
+          labels = c("lower outlier", 
+                     "< 25%", 
+                     "25% - 50%", 
+                     "50% - 75%",
+                     "> 75%", 
+                     "upper outlier"))  +
+  tm_borders() +
+  tm_layout(title = mtitle, 
+            title.position = c("right",
+                               "bottom"))
+}
+```
+
+### 4.3.5 Plot box map - ECONOMY ACTIVE (Have holes)
+```{r fig.retina=4, fig.height=5}
+boxmap("ECONOMY ACTIVE", mpszpop2020a)
+```
+
+
+### 4.3.6 Tidy version of box map (No holes, nicer to see)
+```{r echo=FALSE}
+boxmap <- function(vnam, df, 
+                   legtitle=NA,
+                   mtitle="Box Map",
+                   mult=1.5){
+  var <- get.var(vnam,df)
+  bb <- boxbreaks(var)
+  tm_shape(mpszpop2020) +
+    tm_polygons() +
+  tm_shape(df) +
+     tm_fill(vnam,title=legtitle,
+             breaks=bb,
+             palette="Blues",
+          labels = c("lower outlier", 
+                     "< 25%", 
+                     "25% - 50%", 
+                     "50% - 75%",
+                     "> 75%", 
+                     "upper outlier"))  +
+  tm_borders() +
+  tm_layout(title = mtitle, 
+            title.position = c("right",
+                               "bottom"))
+}
+```
+
+### 4.3.7 Plot box map - ECONOMY ACTIVE (Have holes)
+```{r fig.retina=4, fig.width=12, fig.height=6}
+boxmap("ECONOMY ACTIVE", mpszpop2020a)
+```
+
+## 4.4 Choropleth Map for Rates
+
+### 4.4.1 Comparing distribution of total and aged population, 2020
+
+### 4.4.1.1 TOTAL
+```{r echo=FALSE, eval=TRUE, fig.retina=4, fig.height=5}
+qtm(mpszpop2020, "TOTAL",
+    title = "Distribution of total population, 2020")
+```
+
+### 4.4.1.2 AGED
+```{r echo=FALSE, eval=TRUE,fig.retina=4, fig.height=5}
+qtm(mpszpop2020, "AGED",
+    title = "Distribution of aged population, 2020")
+```
+
+
+## 4.5 Raw Rate map
+```{r echo=TRUE, eval=TRUE}
+mpszpop2020a <- mpszpop2020 %>%
+  mutate(`AGED%` = (`AGED`/`TOTAL`) * 100) %>%
+  filter (`AGED%` >= 0)
+
+```
+
+## 4.5.1 Plot Raw Rate map
+```{r echo=FALSE, eval=TRUE, message=FALSE, fig.retina=4, fig.height=5}
+var <- get.var("AGED%", mpszpop2020a)
+boxbreaks(var)
+boxmap("AGED%",mpszpop2020a)
+```
+
+
+## 4.6 Compare Absolute and Rate Choropleth Maps
+
+### 4.6.1 Absolute
+```{r echo=FALSE, fig.retina=4, fig.height=5}
+boxmap("AGED",mpszpop2020a)
+```
+
+### 4.6.2 Rate
+```{r echo=FALSE, fig.retina=4, fig.height=5}
+boxmap("AGED%",mpszpop2020a)
+```
+
+* There is a difference in the colours.
+
