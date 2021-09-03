@@ -1,0 +1,42 @@
+---
+title: "Hands-on Exercise 4"
+description: |
+  Work in Progress 
+author:
+  - name: Nor Aisyah
+    url: https://www.linkedin.com/in/nor-aisyah/
+date: 09-03-2021
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Work in Progress :)
+
+
+# 1. Installing and Loading the R packages
+```{r echo=TRUE, eval=TRUE}
+packages = c('maptools', 'sf', 'raster','spatstat', 'tmap')
+for (p in packages){
+if(!require(p, character.only = T)){
+install.packages(p)
+}
+library(p,character.only = T)
+}
+```
+
+# 2.Geospatial Data Wrangling
+# 2.1 Importing the geospatial data
+```{r echo=TRUE, eval=TRUE}
+childcare_sf <- st_read("data/child-care-services-geojson.geojson") %>%
+  st_transform(crs = 3414)
+sg_sf <- st_read(dsn = "data", layer="CostalOutline")
+mpsz_sf <- st_read(dsn = "data", 
+                layer = "MP14_SUBZONE_WEB_PL")
+```
+

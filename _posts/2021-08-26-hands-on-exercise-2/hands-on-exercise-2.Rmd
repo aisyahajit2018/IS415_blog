@@ -9,6 +9,8 @@ date: 08-26-2021
 output:
   distill::distill_article:
     self_contained: false
+    toc: TRUE
+    toc_depth: 3
 ---
 
 
@@ -16,7 +18,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-# Getting Started  
+# 1. Getting Started  
 
 
 This code chunk performs 3 tasks:
@@ -35,93 +37,163 @@ for (p in packages){
 }
 ```
 
-# Importing Geospatial Data
+## 1.1 My own notes: 
+a. More about packages used:
+- **sf**: used for importing, managing, and processing **geospatial** data
+- **tidyverse**: used for importing, wrangling and visualising data. It consists of a family of R packages, such as:
+  - readr for importing csv data,
+  - readxl for importing Excel worksheet,
+  - tidyr for manipulating data,
+  - dplyr for transforming data, and
+  - ggplot2 for visualising data
 
-## Importing **polygon** feature data in shapefile format
+# 2. Importing Geospatial Data
+
+## 2.1 Importing **polygon** feature data in shapefile format
 ```{r echo=TRUE, eval=TRUE}
 mpsz = st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL")
 ```
 
-## Importing **polyline** feature data in shapefile form
+## 2.2 Importing **polyline** feature data in shapefile form
 ```{r echo=TRUE, eval=TRUE}
 cyclingpath = st_read(dsn = "data/geospatial", layer = "CyclingPath")
 
 ```
 
-## Importing GIS data in kml format
+## 2.3 Importing GIS data in kml format
 ```{r echo=TRUE, eval=TRUE}
 preschool = st_read("data/geospatial/pre-schools-location-kml.kml")
 ```
 
-# Checking the Content of A Simple Feature Data Frame
+## 2.4 My own notes: 
+a. Difference between Polyline and Polygon : 
+- Polyline geometries are made up of two or more vertices forming a connected line.
+- Polygon geometries are made up of at least four vertices forming an enclosed area. The first and last vertices are always in the same place.
 
-## st_geometry() function
+b. Both **mpsz** and **cycling** path have **svy21** as the projected coordinates systems. 
+
+c. Only **preschool** have **wgs84** as the projected coordinates systems. 
+- We need to assign the correct one later
+
+# 3. Checking the Content of A Simple Feature Data Frame
+
+## 3.1 **st_geometry()** function
+- Column in the sf data.frame that contains the geometries is a list of class sfc. 
+- We can retrieve the geometry list-column like this:
+
+```{r echo=TRUE, eval=TRUE}
+mpsz$geometry
+```
+
+- But the more general way is:
+
 ```{r echo=TRUE, eval=TRUE}
 st_geometry(mpsz)
 ```
 
-## glimpse() function
+## 3.2 **glimpse()** function
+- glimpse function belongs to dplyr package.
+- glimpse will show the 
+   - No. of rows and columns, 
+   - Column Names found,
+   - Data types of each field and 
+   - A few samples of the data
+
 ```{r echo=TRUE, eval=TRUE}
 glimpse(mpsz)
 ```
 
-## head() function
+## 3.3 **head()** function
+- head function belongs to Base R package.
+- we can limit the no. of records to display by specifying the number for n
+- head will show the complete information of a feature object:
+  - No. of fields (columns)
+  - No. of features (rows)
+  - Other information like: geometry type, dimension, bounding box, projected crs
+  
 ```{r echo=TRUE, eval=TRUE}
 head(mpsz, n=5)  
 ```
 
-# Plotting the Geospatial Data
 
-## plot() function
+# 4.Plotting the Geospatial Data
+
+## 4.1 **plot()** function
+- Plot the **geometry** map outline
+
 ```{r echo=TRUE, eval=TRUE}
 plot(st_geometry(mpsz))
 ```
 
-## Choose plot by a specific attribute
+- Plot everything 
+
+```{r echo=TRUE, eval=TRUE}
+plot(mpsz)
+```
+
+- Plot a **specific attribute**
+
 ```{r echo=TRUE, eval=TRUE}
 plot(mpsz["PLN_AREA_N"])
 ```
 
 
-# Working with Projection
+# 5. Working with Projection
 
-## Assigning EPSG code to a simple feature data frame
+**Projection transformation**: Project a simple feature data frame from one coordinate system to another coordinate system
 
-### st_crs function - Retrieve coordinate reference system from object
+## 5.1 Assigning EPSG code to a simple feature data frame
+
+### 5.1.1 Retrieve coordinate reference system from object using **st_crs** function
 ```{r echo=TRUE, eval=TRUE}
-
 st_crs(mpsz)
-
 ```
 
-### Assign correct EPSG code
+### 5.1.2 Assign correct EPSG code
+- mpsz is projected in svy21 but the EPSG is 9001
+- Must set it to 3414 before proceeding
+
 ```{r echo=TRUE, eval=TRUE}
 mpsz3414 <- st_set_crs(mpsz, 3414)
 ```
 
-### Check CSR again
+### 5.1.3 Check CSR again
 ```{r echo=TRUE, eval=TRUE}
 st_crs(mpsz3414)
 ```
 
-## Transform the original data from geographic coordinate system to projected coordinate system.
+### 5.1.4 Transform the original data from geographic coordinate system to *projected* coordinate system.
 ```{r echo=TRUE, eval=TRUE}
 preschool3414 <- st_transform(preschool, crs = 3414)
+st_geometry(preschool3414)
 ```
 
 
-# Importing and Converting An Aspatial Data
+# 6. Importing and Converting An Aspatial Data
 
 ```{r echo=TRUE, eval=TRUE}
 listings <- read_csv("data/aspatial/listings.csv")
-
 ```
 
+## 6.1 View data using glimpse vs list
+
+### 6.1.1 glimpse()
 ```{r echo=TRUE, eval=TRUE}
 glimpse(listings) 
 ```
 
-## Creating a simple feature data frame from an aspatial data frame
+### 6.1.2 **list()**
+```{r echo=TRUE, eval=TRUE}
+list(listings) 
+```
+
+## 6.2 Create a simple feature data frame from an aspatial data frame
+- Arguments of **st_as_sf**:
+  - coords: Provide column name of  x-coordinates followed by  column name of y-coordinates
+  - crs: provide the coordinates system in epsg format
+- %>% is used to nest **st_transform() **
+  - *st_transform*: transform newly created simple feature data frame into *3414* projected coordinates system
+  
 ```{r echo=TRUE, eval=TRUE}
 listings_sf <- st_as_sf(listings, 
                        coords = c("longitude", "latitude"),
@@ -134,55 +206,70 @@ glimpse(listings_sf)
 ```
 
 
-# Geoprocessing with sf package
+# 7. Geoprocessing with sf package
+
+Task on hand: Determine the extend of the land need to be acquired and their total area
+
+## 7.1 Buffer
+
+### 7.1.1 Compute the 5-meter buffers around cycling paths using st_buffer
+- Why 5 meters? As authority wants to upgrade the exiting cycling path hence they need to acquire 5 metres of reserved land on the both sides of the current cycling path.
 
 ```{r echo=TRUE, eval=TRUE}
 buffer_cycling <- st_buffer(cyclingpath, dist=5, nQuadSegs = 30)
 ```
 
-
+### 7.1.2 Calculate area of the buffers 
 ```{r echo=TRUE, eval=TRUE}
 buffer_cycling$AREA <- st_area(buffer_cycling)
-sum(buffer_cycling$AREA)
-
 ```
 
-# Point-in-polygon count
+### 7.1.3 Derive the total land involved with sum()
+```{r echo=TRUE, eval=TRUE}
+sum(buffer_cycling$AREA)
+```
 
-## Identify pre-schools located inside each Planning Subzone - st_intersects(). 
 
-## Calculate numbers of pre-schools that fall inside each planning subzone using length() of Base R  
+# 8. Point-in-polygon count
+
+# 8.1 Find no. of preschools in each Planning Subzone
+- Identify pre-schools located inside each Planning Subzone using **st_intersects()**. 
+- Calculate numbers of pre-schools that fall inside each planning subzone using **length()** of Base R  
+
 ```{r echo=TRUE, eval=TRUE}
 mpsz3414$`PreSch Count`<- lengths(st_intersects(mpsz3414, preschool3414))
 summary(mpsz3414$`PreSch Count`)
 ```
 
-## List planning subzone with most number of pre-school
+## 8.2 List planning subzone with most number of pre-school using **top_n()**
 ```{r echo=TRUE, eval=TRUE}
 top_n(mpsz3414, 1, `PreSch Count`)
 ```
 
-## Calculate the density of pre-school by planning subzone.
+## 8.3 Calculate density of pre-school by planning subzone.
+
+### 8.3.1 Derive area of each planning subzone using **st_area()** of sf package first
 ```{r echo=TRUE, eval=TRUE}
 mpsz3414$Area <- mpsz3414 %>% st_area()
 ```
 
-
-## Multiply to show in km^2
+### 8.3.2 Compute the density using **mutate()** of dplyr
+- We multiple it by 1,000,000 to show in km^2
 
 ```{r echo=TRUE, eval=TRUE}
-mpsz3414 <- mpsz3414 %>% mutate(`PreSch Density` = `PreSch Count`/Area * 1000000)
+mpsz3414 <- mpsz3414 %>%
+  mutate(`PreSch Density` = `PreSch Count`/Area * 1000000)
 ```
 
-# Explorotary Data Analysis (EDA)
+# 9 Explorotary Data Analysis (EDA)
 
-## Histogram
-```{r echo=TRUE, eval=TRUE}
+## 9.1 Histogram to showdistribution of PreSch Density
+```{r echo=TRUE, eval=TRUE, fig.width=5, fig.height=5}
 hist(mpsz3414$`PreSch Density`)
 ```
 
-## Histogram using ggplot
-```{r echo=TRUE, eval=TRUE}
+## 9.2 Enhance histogram using **ggplot**
+```{r echo=TRUE, eval=TRUE, fig.width=5, fig.height=5}
 ggplot(data=mpsz3414, 
        aes(x= as.numeric(`PreSch Density`)))+
   geom_histogram(bins=20, 
@@ -194,16 +281,33 @@ ggplot(data=mpsz3414,
       y = "Frequency")
 ```
 
+## 9.3 Plot a scatterplot showing the relationship between Pre-school Density and Pre-school Count.
 
-```{r echo= FALSE, fig.width=5, fig.height=5}
-ggplot(data=mpsz3414,
-       aes(y=`PreSch Count`,
-         x=as.numeric(`Presch Density`)))+
-  geom_point(color="black",
-             fill="light blue") +  xlim(0, 60) + ylim(0, 60) + labs(title="",
-        x="Pre-school density (per km sq)",
-        y="Pre-school count")
+### 9.3.1 Default, showing different scale for x and y axis
+```{r echo= TRUE, fig.width=5, fig.height=5}
+ggplot(data=mpsz3414, 
+       aes(y = `PreSch Count`, 
+           x= as.numeric(`PreSch Density`)))+
+  geom_point(color="black", 
+             fill="light blue") + 
+  labs(title = "",
+      x = "Pre-school density (per km sq)",
+      y = "Pre-school count")
 
+```
+
+### 9.3.2 Edit **xlim and ylim** to show same scale for x and y axis
+```{r echo=FALSE, fig.width=5, fig.height=5}
+ggplot(data=mpsz3414, 
+       aes(y = `PreSch Count`, 
+           x= as.numeric(`PreSch Density`)))+
+  geom_point(color="black", 
+             fill="light blue") + 
+  xlim(0, 60) +
+  ylim(0, 60) +
+  labs(title = "",
+      x = "Pre-school density (per km sq)",
+      y = "Pre-school count")
 ```
 
 Done! :)

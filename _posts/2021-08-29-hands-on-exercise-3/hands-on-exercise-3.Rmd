@@ -87,6 +87,7 @@ mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)
 ### 2.5 Join the attribute data and geospatial data
 
 - Must convert to uppercase since one column is in uppercase and the other is not. 
+
 ```{r echo=TRUE, eval=TRUE}
 popdata2020 <- popdata2020 %>%
   mutate_at(.vars = vars(PA, SZ), 
@@ -96,13 +97,10 @@ popdata2020 <- popdata2020 %>%
 
 
 ### 2.6 Join the geographical data and attribute table
-
-
 ```{r echo=TRUE, eval=TRUE}
 mpsz_pop2020 <- left_join(mpsz, popdata2020,
                           by = c("SUBZONE_N" = "SZ"))
 ```
-
 
 
 ```{r}

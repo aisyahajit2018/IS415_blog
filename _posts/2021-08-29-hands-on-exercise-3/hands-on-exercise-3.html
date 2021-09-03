@@ -1601,16 +1601,16 @@ First 10 features:
 </div>
 <h3 id="join-the-attribute-data-and-geospatial-data">2.5 Join the attribute data and geospatial data</h3>
 <ul>
-<li>Must convert to uppercase since one column is in uppercase and the other is not.
+<li>Must convert to uppercase since one column is in uppercase and the other is not.</li>
+</ul>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>popdata2020</span> <span class='op'>&lt;-</span> <span class='va'>popdata2020</span> <span class='op'>%&gt;%</span>
-<span class='fu'>mutate_at</span><span class='op'>(</span>.vars <span class='op'>=</span> <span class='fu'>vars</span><span class='op'>(</span><span class='va'>PA</span>, <span class='va'>SZ</span><span class='op'>)</span>, 
-        .funs <span class='op'>=</span> <span class='fu'>funs</span><span class='op'>(</span><span class='va'>toupper</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>`ECONOMY ACTIVE`</span> <span class='op'>&gt;</span> <span class='fl'>0</span><span class='op'>)</span>
+  <span class='fu'>mutate_at</span><span class='op'>(</span>.vars <span class='op'>=</span> <span class='fu'>vars</span><span class='op'>(</span><span class='va'>PA</span>, <span class='va'>SZ</span><span class='op'>)</span>, 
+          .funs <span class='op'>=</span> <span class='fu'>funs</span><span class='op'>(</span><span class='va'>toupper</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>`ECONOMY ACTIVE`</span> <span class='op'>&gt;</span> <span class='fl'>0</span><span class='op'>)</span>
 </code></pre>
-</div></li>
-</ul>
+</div>
 </div>
 <h3 id="join-the-geographical-data-and-attribute-table">2.6 Join the geographical data and attribute table</h3>
 <div class="layout-chunk" data-layout="l-body">
@@ -1897,7 +1897,7 @@ First 10 features:
 </div>
 <p><img src="hands-on-exercise-3_files/figure-html5/unnamed-chunk-28-1.png" width="624" /></p>
 </div>
-<h2 id="mappping-spatial-object-meeting-a-selection-criterion">4.4 Mappping Spatial Object Meeting a Selection Criterion</h2>
+<h2 id="mapping-spatial-object-meeting-a-selection-criterion">4.4 Mapping Spatial Object Meeting a Selection Criterion</h2>
 <h3 id="use-selection-funtion-to-map-spatial-objects-meeting-the-selection-criterion.">4.4.1 Use selection funtion to map spatial objects meeting the selection criterion.</h3>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
