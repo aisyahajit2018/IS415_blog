@@ -1,7 +1,7 @@
 ---
 title: "In-class Exercise 3"
 description: |
-  A short description of the post.
+  In this in-class exercise, I learn about analytical mapping. 
 author:
   - name: Nor Aisyah
     url: https://www.linkedin.com/in/nor-aisyah/
