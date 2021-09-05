@@ -29,11 +29,22 @@ for (p in packages){
 }
 ```
 
+More about packages used:
+- **sf**: used for importing, managing, and processing geospatial data
+- **tidyverse**: used for importing, wrangling and visualising data. It consists of a family of R packages, such as:
+  - **readr** for importing csv data,
+  - **readxl** for importing Excel worksheet,
+  - **tidyr** for manipulating data,
+  - **dplyr** for transforming data, and
+  - **ggplot2** for visualising data
+- **tmap**: Used to plot high cartographic quality plots (Since plot() is mean for plotting the geospatial object for quick look)
 
 ## 2. Importing data in R
+Data used:
+- MP14_SUBZONE_WEB_PL, a **polygon** feature layer in ESRI shapefile format,
+- **Aspatial** data file: Singapore Residents by Planning Area / Subzone, Age Group, Sex and Type of Dwelling, June 2011-2020 in csv format
 
-### 2.1 Importing Geospatial Data into R
-
+### 2.1 Importing **Geospatial** Data into R
 The code chunk below uses the *st_read()* function of **sf** package to import `MP14_SUBZONE_WEB_PL` shapefile into R as a simple feature data frame called `mpsz`.   
 
 ```{r echo=TRUE, eval=TRUE}
@@ -41,29 +52,31 @@ mpsz <- st_read(dsn = "data/geospatial",
                 layer = "MP14_SUBZONE_WEB_PL")
 ```
 
-
+- From the results above we can see that:
+  - there are **323 multipolygon features and 15 fields** in the sf data frame. 
+  - **svy21** is the projected coordinates system
+  
 ### 2.2 Examine the content of `mpsz`
-
-
 ```{r echo=TRUE, eval=TRUE}
 mpsz
 ```
 
 
-### 2.3 Import Attribute Data into R
-
-
+### 2.3 Import **Attribute** Data into R
 ```{r, echo=TRUE, message=FALSE}
 popdata <- read_csv("data/aspatial/respopagesextod2011to2020.csv")
 ```
 
 ## 2.4 Data Preparation
 Prepare data table with variables like:
--PA, SZ, YOUNG, ECONOMY ACTIVE, AGED, TOTAL, DEPENDENCY
--(PA and SZ fields can be used as unique identifiers to geocode to MP14_SUBZONE_WEB_PL shapefile)*
+- **YOUNG**: age group 0 to 4 until age groyup 20 to 24,
+- **ECONOMY ACTIVE**: age group 25-29 until age group 60-64,
+- **AGED**: age group 65 and above,
+- **TOTAL**: all age group, and   
+- **DEPENDENCY**: the ratio between young and aged against economy active group
+- PA and SZ fields can be used as **unique identifiers** to geocode to MP14_SUBZONE_WEB_PL shapefile*
 
 ### 2.4.1 Data Wrangling
-
 ```{r echo=TRUE, eval=TRUE}
 popdata2020 <- popdata %>%
   filter(Time == 2020) %>%
@@ -72,22 +85,94 @@ popdata2020 <- popdata %>%
   ungroup()%>%
   pivot_wider(names_from=AG, 
               values_from=POP) %>%
-  mutate(YOUNG = rowSums(.[3:6])
-         +rowSums(.[12])) %>%
-mutate(`ECONOMY ACTIVE` = rowSums(.[7:11])+
-rowSums(.[13:15]))%>%
-mutate(`AGED`=rowSums(.[16:21])) %>%
-mutate(`TOTAL`=rowSums(.[3:21])) %>%  
-mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)
-/`ECONOMY ACTIVE`) %>%
-  select(`PA`, `SZ`, `YOUNG`, 
-       `ECONOMY ACTIVE`, `AGED`, 
-       `TOTAL`, `DEPENDENCY`)
+  mutate(YOUNG = rowSums(.[3:6])+rowSums(.[12])) %>%
+  mutate(`ECONOMY ACTIVE` = rowSums(.[7:11])+rowSums(.[13:15]))%>%
+  mutate(`AGED`=rowSums(.[16:21])) %>%
+  mutate(`TOTAL`=rowSums(.[3:21])) %>%  
+  mutate(`DEPENDENCY` = (`YOUNG` + `AGED`) /`ECONOMY ACTIVE`) %>%
+  select(`PA`, `SZ`, `YOUNG`, `ECONOMY ACTIVE`, `AGED`, `TOTAL`, `DEPENDENCY`)
 ```
 
+### 2.4.2 Data Wrangling (For my own understanding)
 
-### 2.5 Join the attribute data and geospatial data
+#### **Filter and group_by**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata %>%
+  filter(Time == 2020) %>%
+  group_by(PA, SZ, AG) 
+popdata2020v2
+```
 
+#### **summarise**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  summarise(`POP` = sum(`Pop`))
+popdata2020v2
+```
+
+#### **ungroup**
+- Can see that there is no longer this result # Groups:   PA, SZ [332]
+
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  ungroup()
+popdata2020v2
+```
+
+#### **pivot_wider**
+- Pivot table from skinny and long to wide and short table 
+
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  pivot_wider(names_from=AG, 
+              values_from=POP)
+glimpse(popdata2020v2)
+```
+
+#### **mutate - YOUNG**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  mutate(YOUNG = rowSums(.[3:6])+rowSums(.[12]))
+glimpse(popdata2020v2)
+```
+
+#### **mutate - ECONOMY ACTIVE**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  mutate(`ECONOMY ACTIVE` = rowSums(.[7:11])+rowSums(.[13:15]))
+glimpse(popdata2020v2)
+```
+
+#### **mutate - AGED**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  mutate(`AGED`=rowSums(.[16:21]))
+glimpse(popdata2020v2)
+```
+
+#### **mutate - TOTAL**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  mutate(`TOTAL`=rowSums(.[3:21]))
+glimpse(popdata2020v2)
+```
+
+#### **mutate - DEPENDENCY**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  mutate(`DEPENDENCY` = (`YOUNG` + `AGED`) /`ECONOMY ACTIVE`)
+glimpse(popdata2020v2)
+```
+
+#### **select()**
+```{r echo=TRUE, eval=TRUE}
+popdata2020v2 <- popdata2020v2 %>%
+  select(`PA`, `SZ`, `YOUNG`, `ECONOMY ACTIVE`, `AGED`, `TOTAL`, `DEPENDENCY`)
+glimpse(popdata2020v2)
+```
+
+## 2.5 Join the attribute data and geospatial data
+### 2.5.1 Convert to uppercase
 - Must convert to uppercase since one column is in uppercase and the other is not. 
 
 ```{r echo=TRUE, eval=TRUE}
@@ -97,24 +182,25 @@ popdata2020 <- popdata2020 %>%
   filter(`ECONOMY ACTIVE` > 0)
 ```
 
-
-### 2.6 Join the geographical data and attribute table
+### 2.5.2  **Join** the geographical data and attribute table using **left_join()**
 ```{r echo=TRUE, eval=TRUE}
 mpsz_pop2020 <- left_join(mpsz, popdata2020,
                           by = c("SUBZONE_N" = "SZ"))
 ```
 
+### 2.5.3 Export an entire R object (metadata and all) using **write_rds()**
+- To be used in ICE 3. 
 
-```{r}
+```{r echo=TRUE, eval=TRUE}
 mpszpop2020 <- write_rds(mpsz_pop2020, "data/rds/mpszpop2020.rds")
 ```
 
-
-
 ## 3.0 Choropleth Mapping Geospatial Data Using tmap
-
 ### 3.1 Draw a cartographic standard choropleth map as shown below.
-
+My own notes:
+- A **choropleth map** brings together 2 datasets: **spatial** data representing a partition of geographic space into distinct districts, and **statistical** data representing a variable aggregated within each district
+- qtm: means quick thematic map -> Draw a thematic map quickly
+- Disadvantage of **qtm()**: it makes aesthetics of individual layers harder to control.
 
 ```{r echo=TRUE, eval=TRUE}
 tmap_mode("plot")
@@ -122,9 +208,8 @@ qtm(mpsz_pop2020,
     fill = "DEPENDENCY")
 ```
 
-
 ### 3.2 Create choropleth map by using *tmap*'s elements
-
+- we use tmap’s drawing elements to overcome cons of qtm by drawing a high quality cartographic choropleth map
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
@@ -146,62 +231,59 @@ tm_shape(mpsz_pop2020)+
              position = c("left", "bottom"))
 ```
 
-
 ### 3.3 Drawing a base map
-
+- **basic building block** of tmap is tm_shape() followed by one or more layer elemments such as tm_fill() and tm_polygons()
+- this means that you need to always have + after tm_shape()
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020) +
   tm_polygons()
 ```
 
-
-### 3.4 Drawing a choropleth map using *tm_polygons()*
-
-
+### 3.4 Drawing a choropleth map using **tm_polygons()**
+- To draw a choropleth map showing geographical distribution of a **SELECTED VARIABLE** by planning subzone, we just need to assign the target variable 
+- For e.g. **assign Dependency to tm_polygons()**
+- NOTE:
+  - Default colour scheme used is **YlOrRd** of ColorBrewer
+  - By default, **Missing** value will be shaded in **grey.**
+  
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_polygons("DEPENDENCY")
 ```
 
+## 3.5 Drawing a choropleth map using **tm_fill()** and **tm_border()**
+Short overview of **tm_polygons()**, **tm_fill()**, **tm_borders()**
+- **tm_polygons()** is a **wraper** of tm_fill() and tm_border(). 
+- **tm_fill()** shades the **polygons** by using the default colour scheme 
+- **tm_borders()** adds the **borders** of the shapefile onto the choropleth map.
 
-### 3.5 Drawing a choropleth map using *tm_fill()* and *tm_border()**
-
-
+### 3.5.1 Draw a choropleth map by using **tm_fill() alone**
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY")
 ```
 
-
-### 3.6 Add the boundary of the planning subzones
-
-
+### 3.5.2 Add the boundary of the planning subzones using **tm_borders()** & the previous tm_filll()
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY") +
   tm_borders(lwd = 0.1,  alpha = 1)
 ```
 
+### 3.6 Plotting choropleth maps with built-in classification methods
+- tmap provides a total 10 data classification methods, namely: fixed, sd, equal, pretty (default), quantile, kmeans, hclust, bclust, fisher, and jenks.
 
-### 3.7 Plotting choropleth maps with built-in classification methods
-
-
-### 3.7.1 **Quantile** data classification
-
-
+### 3.6.1 **Quantile** data classification that used 5 classes
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
           n = 5,
-          style = "jenks") +
+          style = "quantile") +
   tm_borders(alpha = 0.5)
 ```
 
-
-###  3.7.2 **Equal** data classification
-
-
+### 3.6.2 **Equal** data classification
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
@@ -210,20 +292,194 @@ tm_shape(mpsz_pop2020)+
   tm_borders(alpha = 0.5)
 ```
 
+### 3.6.3 Prepare choropleth maps by using different classification methods supported by tmap and compare their differences
+1. fixed, 
+2. sd, 
+3. equal, 
+4. pretty (default), 
+5. quantile, 
+6. kmeans, 
+7. hclust, 
+8. bclust, 
+9. fisher, and 
+10. jenks
 
-###  3.7.3 PLOTTING CHOROPLETH MAP WITH CUSTOM BREAK
+#### fixed
+Only **fixed** have error
 
-### 3.7.4 Show descriptive statistics of **DEPENDENCY** field
+```{r echo=TRUE, eval=TRUE}
+# tm_shape(mpsz_pop2020)+
+#   tm_fill("DEPENDENCY",
+#           n = 5,
+#           style = "fixed") +
+#   tm_borders(alpha = 0.5) +
+#   tm_layout(legend.position = c("right", "top"), 
+#             title= '1. fixed', 
+#             title.position = c('right', 'top'))
+```
 
+#### sd
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "sd") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '2. sd', 
+            title.position = c('right', 'top'))
+```
 
+#### equal
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "equal") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '3. equal', 
+            title.position = c('right', 'top'))
+```
+
+#### pretty
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "pretty") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '4. pretty', 
+            title.position = c('right', 'top'))
+```
+
+#### quantile
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '5. quantile', 
+            title.position = c('right', 'top'))
+```
+
+#### kmeans
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "kmeans") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '6. kmeans', 
+            title.position = c('right', 'top'))
+```
+
+#### hclust
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "hclust") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '7. hclust', 
+            title.position = c('right', 'top'))
+```
+
+#### bclust
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "bclust") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '8. bclust', 
+            title.position = c('right', 'top'))
+```
+
+#### fisher
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "fisher") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '9. fisher', 
+            title.position = c('right', 'top'))
+```
+
+#### jenks
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 5,
+          style = "jenks") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '10. jenks', 
+            title.position = c('right', 'top'))
+```
+
+### 3.6.4 **Quantile** data classification that different classes (2, 6, 10, 20)
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 2,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '2 classes', 
+            title.position = c('right', 'top'))
+```
+
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 6,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '6 classes', 
+            title.position = c('right', 'top'))
+```
+
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 10,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '10 classes', 
+            title.position = c('right', 'top'))
+```
+
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          n = 20,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.position = c("right", "top"), 
+            title= '20 classes', 
+            title.position = c('right', 'top'))
+```
+
+### 3.6.5 PLOTTING CHOROPLETH MAP WITH CUSTOM BREAK
+- custom break means you define your own intervals 
+
+#### 3.6.5.1 Show descriptive statistics of **DEPENDENCY** field
 ```{r echo=TRUE, eval=TRUE}
 summary(mpsz_pop2020$DEPENDENCY)
 ```
 
-
-### 3.7.5 Plot the choropleth map
-
-
+#### 3.6.5.2 Plot the choropleth map
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
@@ -231,12 +487,8 @@ tm_shape(mpsz_pop2020)+
   tm_borders(alpha = 0.5)
 ```
 
-
 # 4.0 Changing Colour Scheme
-
 # 4.1 Change the colour
-
-
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
@@ -246,9 +498,8 @@ tm_shape(mpsz_pop2020)+
   tm_borders(alpha = 0.5)
 ```
 
-
 # 4.2 Reverse the colour shading
-
+- Original colour shading (light to dark green)
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
@@ -258,11 +509,26 @@ tm_shape(mpsz_pop2020)+
   tm_borders(alpha = 0.5)
 ```
 
+- Reversed colour shading (dark to light green)
 
-# 4.2 Map layouts
+```{r echo=TRUE, eval=TRUE}
+tm_shape(mpsz_pop2020)+
+  tm_fill("DEPENDENCY",
+          style = "quantile",
+          palette = "-Greens") +
+  tm_borders(alpha = 0.5)
+```
 
-# 4.2.1 Map legend
+# 4.3 Map layouts
+- Map layout refers to: combination of all map elements into a cohensive map. 
+- Map elements include: 
+  - objects to be mapped, 
+  - title, 
+  - scale bar, 
+  - compass, margins and aspects ratios.
+- Colour settings and data classification methods covered in the previous section relate to the palette and break-points are used to affect how the map looks.
 
+# 4.3.1 Map **legend**
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY", 
@@ -282,10 +548,7 @@ tm_shape(mpsz_pop2020)+
   tm_borders(alpha = 0.5)
 ```
 
-
-# 4.2.2 Classic map style
-
-
+# 4.3.2 Classic map **style**
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY", 
@@ -295,9 +558,9 @@ tm_shape(mpsz_pop2020)+
   tmap_style("classic")
 ```
 
-
-# 4.2.3 Draw other map furniture (Cartographic)
- 
+# 4.3.3 Draw other map furniture (Cartographic)
+- Other map furnitures include: **compass, scale bar and grid lines**
+- tm_compass(), tm_scale_bar() and tm_grid() are used to add compass, scale bar and grid lines onto the choropleth map
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
@@ -319,19 +582,14 @@ tm_shape(mpsz_pop2020)+
              position = c("left", "bottom"))
 ```
 
-
-# 4.2.4 Reset the default style
-
-
+# 4.3.4 Reset the default style
 ```{r echo=TRUE, eval=TRUE}
 tmap_style("white")
 ```
 
-
-## 4.3 Drawing Small Multiple Choropleth Maps 
-
-## 4.3.1 Small multiple choropleth maps are created defining ***ncols*** in **tm_fill()**
-
+## 4.4 Drawing Small Multiple Choropleth Maps 
+## 4.4.1 Small multiple choropleth maps are created defining ***ncols*** in **tm_fill()**
+Code below uses: tm_shape, tm_fill, tm_layout, tm_borders, tmap_style
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+
@@ -343,9 +601,8 @@ tm_shape(mpsz_pop2020)+
   tmap_style("white")
 ```
 
-
-## 4.3.2 Small multiple choropleth maps are created by assigning multiple values to at least one of the aesthetic arguments
-
+## 4.4.2 Small multiple choropleth maps are created by assigning multiple values to at least one of the aesthetic arguments
+Code below uses: tm_shape, tm_fill, tm_layout
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020)+ 
@@ -355,9 +612,9 @@ tm_shape(mpsz_pop2020)+
   tm_layout(legend.position = c("right", "bottom"))
 ```
 
-
-## 4.3.3 Multiple small choropleth maps are created by using **tm_facets()**. 
-
+## 4.4.3 Multiple small choropleth maps are created by using **tm_facets()**. 
+- **tm_facets**: specifies how small multiples are placed in a **grid**
+Code below uses: tm_shape, tm_fill, tm_facets, tm_layout, tm_borders
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020) +
@@ -374,9 +631,9 @@ tm_shape(mpsz_pop2020) +
   tm_borders(alpha = 0.5)
 ```
 
-
-## 4.3.4 Multiple small choropleth maps are created by creating multiple stand-alone maps with **tmap_arrange()**. 
-
+## 4.4.4 Multiple small choropleth maps are created by creating multiple **stand-alone maps** with **tmap_arrange()**. 
+- here you can see that we create multiple **stand-alone maps** FIRST
+- before we proceed with tmap_arrange
 
 ```{r echo=TRUE, eval=TRUE}
 youngmap <- tm_shape(mpsz_pop2020)+ 
@@ -390,11 +647,9 @@ agedmap <- tm_shape(mpsz_pop2020)+
 tmap_arrange(youngmap, agedmap, asp=1, ncol=2)
 ```
 
-
-## 4.4 Mapping Spatial Object Meeting a Selection Criterion
-
-### 4.4.1 Use selection funtion to map spatial objects meeting the selection criterion. 
-
+## 4.5 Mapping Spatial Object Meeting a **Selection Criterion**
+### 4.5.1 Use selection funtion to map spatial objects meeting the **Selection Criterion**
+- Here, the selection criterion is **REGION_N=="CENTRAL REGION"**
 
 ```{r echo=TRUE, eval=TRUE}
 tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
@@ -411,7 +666,4 @@ tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
             frame = FALSE) +
   tm_borders(alpha = 0.5)
 ```
-
-
-
 

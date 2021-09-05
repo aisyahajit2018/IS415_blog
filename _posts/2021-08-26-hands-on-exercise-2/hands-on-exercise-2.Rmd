@@ -48,19 +48,31 @@ a. More about packages used:
   - ggplot2 for visualising data
 
 # 2. Importing Geospatial Data
+Data used:
+- MP14_SUBZONE_WEB_PL, a **polygon** feature layer in ESRI shapefile format,
+- CyclingPath, a **line** feature layer in ESRI shapefile format, and
+- PreSchool, a **point** feature layer in kml file format.
 
 ## 2.1 Importing **polygon** feature data in shapefile format
 ```{r echo=TRUE, eval=TRUE}
 mpsz = st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL")
 ```
 
+- From the results above we can see that:
+  - there are **323 multipolygon features and 15 fields** in the sf data frame. 
+  - **svy21** is the projected coordinates system
+  
 ## 2.2 Importing **polyline** feature data in shapefile form
 ```{r echo=TRUE, eval=TRUE}
 cyclingpath = st_read(dsn = "data/geospatial", layer = "CyclingPath")
 
 ```
 
-## 2.3 Importing GIS data in kml format
+- From the results above we can see that:
+  - there are **3336  multipolygon features and 2 fields** in the sf data frame. 
+  - **svy21** is the projected coordinates system
+  
+## 2.3 Importing **GIS/Line** data in kml format
 ```{r echo=TRUE, eval=TRUE}
 preschool = st_read("data/geospatial/pre-schools-location-kml.kml")
 ```

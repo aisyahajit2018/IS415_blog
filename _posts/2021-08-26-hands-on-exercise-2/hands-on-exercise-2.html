@@ -1490,7 +1490,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <ul>
 <li><a href="#importing-polygon-feature-data-in-shapefile-format">2.1 Importing <strong>polygon</strong> feature data in shapefile format</a></li>
 <li><a href="#importing-polyline-feature-data-in-shapefile-form">2.2 Importing <strong>polyline</strong> feature data in shapefile form</a></li>
-<li><a href="#importing-gis-data-in-kml-format">2.3 Importing GIS data in kml format</a></li>
+<li><a href="#importing-gisline-data-in-kml-format">2.3 Importing <strong>GIS/Line</strong> data in kml format</a></li>
 <li><a href="#my-own-notes-1">2.4 My own notes:</a></li>
 </ul></li>
 <li><a href="#checking-the-content-of-a-simple-feature-data-frame">3. Checking the Content of A Simple Feature Data Frame</a>
@@ -1584,6 +1584,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </ul></li>
 </ul>
 <h1 id="importing-geospatial-data">2. Importing Geospatial Data</h1>
+<p>Data used: - MP14_SUBZONE_WEB_PL, a <strong>polygon</strong> feature layer in ESRI shapefile format, - CyclingPath, a <strong>line</strong> feature layer in ESRI shapefile format, and - PreSchool, a <strong>point</strong> feature layer in kml file format.</p>
 <h2 id="importing-polygon-feature-data-in-shapefile-format">2.1 Importing <strong>polygon</strong> feature data in shapefile format</h2>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -1599,6 +1600,13 @@ Dimension:     XY
 Bounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33
 Projected CRS: SVY21</code></pre>
 </div>
+<ul>
+<li>From the results above we can see that:
+<ul>
+<li>there are <strong>323 multipolygon features and 15 fields</strong> in the sf data frame.</li>
+<li><strong>svy21</strong> is the projected coordinates system</li>
+</ul></li>
+</ul>
 <h2 id="importing-polyline-feature-data-in-shapefile-form">2.2 Importing <strong>polyline</strong> feature data in shapefile form</h2>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -1614,7 +1622,14 @@ Dimension:     XY
 Bounding box:  xmin: 12831.45 ymin: 28347.98 xmax: 42799.89 ymax: 48948.15
 Projected CRS: SVY21</code></pre>
 </div>
-<h2 id="importing-gis-data-in-kml-format">2.3 Importing GIS data in kml format</h2>
+<ul>
+<li>From the results above we can see that:
+<ul>
+<li>there are <strong>3336 multipolygon features and 2 fields</strong> in the sf data frame.</li>
+<li><strong>svy21</strong> is the projected coordinates system</li>
+</ul></li>
+</ul>
+<h2 id="importing-gisline-data-in-kml-format">2.3 Importing <strong>GIS/Line</strong> data in kml format</h2>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>preschool</span> <span class='op'>=</span> <span class='fu'>st_read</span><span class='op'>(</span><span class='st'>"data/geospatial/pre-schools-location-kml.kml"</span><span class='op'>)</span>
