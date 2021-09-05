@@ -44,19 +44,16 @@ library(p,character.only = T)
    
 - **tmap**: provides functions for plotting cartographic quality *static* point patterns maps or *interactive* maps by using leaflet API.
 
-My own notes:
+### My own notes
+
 - **ppp** is a point pattern object
 - Difference between Spatial Data Types (Vector and Raster)
   - Raster data works with pixels
   - Vector data consists of coordinates
   - we can convert vector to raster, vice versa
-  
-
 
 # 2.Spatial Data Wrangling
-
-
-My own notes:
+## My own notes
 - **Spatial vs Geospatial**: geospatial is of or pertaining to a geographic location, especially data while spatial is of or pertaining to space
 - **st_transform**: takes a geometry (childcare_sf) and a spatial reference system identifier (3414) as input parameters and transforms the geometry to be represented in the given spatial reference system
 
@@ -74,9 +71,9 @@ mpsz_sf <- st_read(dsn = "data",
                 layer = "MP14_SUBZONE_WEB_PL")
 ```
 
-** Looking at the Projected CRS, we can see that both mpsz_sf and sg_sf are SVY21 but only childcare_sf is WGS 84. 
+** NOTE: Looking at the Projected CRS, we can see that both mpsz_sf and sg_sf are SVY21 but only childcare_sf is WGS 84. 
 
-My own notes:
+### My own notes
 - EPSG: A particular CRS can be referenced by its EPSG code. The EPSG is a structured dataset of CRS and Coordinate Transformations. 
   - EPSG 4326 uses a coordinate system the same as a GLOBE (curved surface). 
   - EPSG 3857 uses a coordinate system the same as a MAP (flat surface).
@@ -111,9 +108,7 @@ tm_shape(childcare_sf)+
   tm_dots()
 ```
 
-
-# My own notes (Skip this part):
-
+### My own notes (Skip this part):
 - **sg_sf**
   - must have **tm_polygon** if not there will be an error: no layer elements defined after tm_shape
   
@@ -150,7 +145,7 @@ plot(childcare_sf)
 ```
 # 2.5 Creating a Pin Map
 
-My own notes:
+### My own notes
 - tmap is using **leaflet for R** API (open-source JavaScript libraries for interactive maps). 
 - this interactive pin map is it allows us to:
   - navigate and zoom around the map freely. 
@@ -184,7 +179,7 @@ mpsz <- as_Spatial(mpsz_sf)
 sg <- as_Spatial(sg_sf)
 ```
 
-My own notes:
+### My own notes
 - See the difference between sp and sf (childcare)
 
 ```{r echo=TRUE, eval=TRUE}
@@ -234,7 +229,7 @@ childcare_sp <- as(childcare, "SpatialPoints")
 sg_sp <- as(sg, "SpatialPolygons")
 ```
 
-My own notes: Spatial* classes vs generic sp object**
+### My own notes: Spatial* classes vs generic sp object**
 - You can see that the previous SpatialPolygonsDataFrame class has now changed to the respective Spatial objects (points/polygons)
 - The points in a SpatialPoints object may be associated with a row of attributes to create a SpatialPointsDataFrame object
  
@@ -343,7 +338,7 @@ summary(childcareSG_ppp)
 # 4. First-order Spatial Point Patterns Analysis
 ## 4.1 Kernel Density Estimation
 
-My own notes:
+### My own notes
 - Kernel density estimation involves applying a function (known as a “kernel”) to each data point, which averages the location of that point with respect to the location of other data points.
 - Kernel density estimation maps are very popular among crime analysts.
 - The areas identified as hotspots by KDE (using historical data) tend to be the ones that better identify the areas that will have high levels of crime in the future.
@@ -430,7 +425,7 @@ plot(kde_childcareSG.ppl, main = "bw.ppl")
 - As mentioned earlier, default  kernel method is gaussian
 - There are others like: Epanechnikov, Quartic and Dic
 
-My own notes:
+#### My own notes
 - Not much difference can be seen: 
   - Looks like Gaussian is the clearest, Disc looks pixelated
   
