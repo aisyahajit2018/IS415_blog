@@ -342,5 +342,4 @@ boxmap("AGED",mpszpop2020a)
 boxmap("AGED%",mpszpop2020a)
 ```
 
-* There is a difference in the colours.
-
+NOTE: There is a difference in the colours.
