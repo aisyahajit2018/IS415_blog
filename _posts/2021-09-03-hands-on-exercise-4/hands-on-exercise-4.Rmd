@@ -35,18 +35,18 @@ library(p,character.only = T)
   - Will be used to convert spatial objects into ppp format of spatstat
   
 - **sf**: used for importing, managing, and processing **geospatial** data
-  - specifically vector-based geospatial data
+  - specifically **vector-based** geospatial data
   
-- **raster**: reads, writes, manipulates, analyses and model of gridded spatial data
+- **raster**: reads, writes, manipulates, analyses and model of **gridded** spatial data
 
 - **spatstat**: contains useful functions for point pattern analysis. 
    - Will be used to perform **1st- and 2nd-order spatial point patterns analysis** and derive kernel density estimation (**KDE**) layer.
    
-- **tmap**: provides functions for plotting cartographic quality *static* point patterns maps or *interactive* maps by using leaflet API.
+- **tmap**: provides functions for plotting cartographic **quality** *static* point patterns maps or *interactive* maps by using leaflet API.
 
 ### My own notes
 
-- **ppp** is a point pattern object
+- **ppp** is a point pattern object (of spatstat package)
 - Difference between Spatial Data Types (Vector and Raster)
   - Raster data works with pixels
   - Vector data consists of coordinates
@@ -335,7 +335,33 @@ childcareSG_ppp
 summary(childcareSG_ppp)
 ```
 
+# First-order Spatial Point Patterns Analysis
+**In point pattern analysis, Spatial point data that you have must be the whole population, cannot be a sample**
+Describing the spatial pattern:
+- In order to confirm the observed pattern indeed show a cluster and not randomly distribute, need to perform statistical test.
+- That is why we need to perform SPA. 
+- SPA don't allow you to analyse the height of buildings since it is studying Euclidean space
+- SPA all geo data should be in Projected CRS and not geographic since geographic is in decimal degree
+- 1st order - find out whether a particular Spatial point pattern is randomly distributed or is there a sign of clustering.
+  - Assumptions are due to the underlying properties
+  - If it is a crime - thefts, then you see whether where the rich and supermarkets at
+  - if car collision - then underlying reason might be due to the blind spots or poor planning of roads
+- 2nd order - locations of child care center tend to cluster together bc that is where they tend to enjoy g? economics
+  - if you find McDonald's, chances are you can find KFC nearby. 
+  - Find out whether the spatial patterns that we observed is due to interaction effect between all the spatial points.
+
+For KDE, 
+- Certain crimes can be either sparse or localized. For eg, drugs distribution. In UK, common distribution places are either at nightclubs or illegal drugstores. So take this into consideration before choosing quartic and normal. 
+- in SG, parents tend to send their kids to kindergarten nearer to home or work locations.So this resembles quartic. 
+- For sec schools, parents tend to look for schools that are better. So people are willing travel slightly longer and this resembles Gaussian.
+- Must control or fixed the number of points you can catch for Adaptive Bandwidth. 
+- When to use fixed/adaptive?
+  - Depends on spatial configuration
+  - In SG context, childcare you cannot use fixed since in town vs out town there are a difference in the no. of buildings like retail malls etc. Hence, must use adaptive bandwidth.
+  - If we are only focusing on Punggol area, then it makes sense to use fixed bandwith because it tends to be more concentrated.
+
 # 4. First-order Spatial Point Patterns Analysis
+
 ## 4.1 Kernel Density Estimation
 
 ### My own notes

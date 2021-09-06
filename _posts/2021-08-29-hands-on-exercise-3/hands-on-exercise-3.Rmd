@@ -30,6 +30,7 @@ for (p in packages){
 ```
 
 More about packages used:
+
 - **sf**: used for importing, managing, and processing geospatial data
 - **tidyverse**: used for importing, wrangling and visualising data. It consists of a family of R packages, such as:
   - **readr** for importing csv data,
@@ -41,6 +42,7 @@ More about packages used:
 
 ## 2. Importing data in R
 Data used:
+
 - MP14_SUBZONE_WEB_PL, a **polygon** feature layer in ESRI shapefile format,
 - **Aspatial** data file: Singapore Residents by Planning Area / Subzone, Age Group, Sex and Type of Dwelling, June 2011-2020 in csv format
 
@@ -68,7 +70,9 @@ popdata <- read_csv("data/aspatial/respopagesextod2011to2020.csv")
 ```
 
 ## 2.4 Data Preparation
+
 Prepare data table with variables like:
+
 - **YOUNG**: age group 0 to 4 until age groyup 20 to 24,
 - **ECONOMY ACTIVE**: age group 25-29 until age group 60-64,
 - **AGED**: age group 65 and above,
@@ -197,7 +201,9 @@ mpszpop2020 <- write_rds(mpsz_pop2020, "data/rds/mpszpop2020.rds")
 
 ## 3.0 Choropleth Mapping Geospatial Data Using tmap
 ### 3.1 Draw a cartographic standard choropleth map as shown below.
+
 My own notes:
+
 - A **choropleth map** brings together 2 datasets: **spatial** data representing a partition of geographic space into distinct districts, and **statistical** data representing a variable aggregated within each district
 - qtm: means quick thematic map -> Draw a thematic map quickly
 - Disadvantage of **qtm()**: it makes aesthetics of individual layers harder to control.
@@ -253,7 +259,8 @@ tm_shape(mpsz_pop2020)+
 ```
 
 ## 3.5 Drawing a choropleth map using **tm_fill()** and **tm_border()**
-Short overview of **tm_polygons()**, **tm_fill()**, **tm_borders()**
+Short overview of **tm_polygons()**, **tm_fill()**, **tm_borders()**:
+
 - **tm_polygons()** is a **wraper** of tm_fill() and tm_border(). 
 - **tm_fill()** shades the **polygons** by using the default colour scheme 
 - **tm_borders()** adds the **borders** of the shapefile onto the choropleth map.
