@@ -1,7 +1,7 @@
 ---
 title: "In-class Exercise 4"
 description: |
-  A short description of the post.
+  In this in class exercise, I gain a deeper understanding on the different functions to perform spatial point patterns analysis.
 author:
   - name: Nor Aisyah
     url: https://www.linkedin.com/in/nor-aisyah/
