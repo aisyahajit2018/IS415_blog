@@ -19,6 +19,9 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 # 1. Installing and loading required packages
+
+My notes:
+
 - sf is mainly used for importing geospatial data
 - raster is for handling 
 
@@ -34,6 +37,9 @@ library(p,character.only = T)
 ```
 
 ## 1.1 More information about the packages used
+
+My notes:
+
 - **maptools**: Manipulate geographic data. 
   - Will be used to convert spatial objects into ppp format of spatstat
   
@@ -57,7 +63,7 @@ library(p,character.only = T)
 # 2. Import Geospatial Data
 ```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
 sg_sf <- st_read(dsn="data/shapefile", layer="CostalOutline") 
-mpsz_sf <- st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL")
+mpsz_sf <- st_read(dsn = "data/shapefile", layer = "MP14_SUBZONE_WEB_PL")
 ```
 
 # 3. Importing Aspatial Data
@@ -66,11 +72,107 @@ childcare <- read_rds("data/rds/childcare.rds")
 CHAS <- read_rds("data/rds/CHAS.rds")
 ```
 
+My notes:
+
+** Difference between readRDS and read_rds:
+
+- discouraged from using readRDS (baseR method) to import data as they are relatively slow when dealing with big data
+- they are not tibble data format
+- Hence, better to use read_rds
+
 ## 3.1 Converting from aspatial to geospatial
 ```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+CHAS_sf <- st_as_sf(CHAS,
+                    coords = c("X_COORDINATE",
+                               "Y_COORDINATE"),
+                    crs=3414)
+```
 
+My notes:
+
+- For this apatial data, we have 2 coordinate data
+one is in degree and one is in metres
+- as we know that the data is by SLA, so we used 
+
+```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+childcare$Lat <- as.numeric(childcare$Lat)
+childcare$Lng <- as.numeric(childcare$Lng)
+childcare_sf <- st_as_sf(childcare, 
+                         coords=c("Lng", "Lat"),
+                         crs=4326) %>%
+  st_transform(crs=3414)
+```
+
+# 4. Geospatial Data Wrangling
+- st_set_crs is for assigning crs with the EPSG code
+- Difference between **SVY21 and WGS 84**: 
+  - Allow us to know the data itself
+  - Originally, the CHILDCARE is in latlng and is measured in national degree. 
+  - EPSG code for WGS8 is 4326
+  - 1st example, we already know it is in metres, therefore we straightaway assign the crs to 3414.
+  - For 2nd example, since it is latlng, we convert it to 4326 (wgs 84 format) first then transform the crs.
+- Difference between **set** and **transform**:
+  - When we set using **st_set_crs**, we only assign and not performing any mathematical transformation. 
+  - But when we use **st_transform**, we are actually converting decimal degree to metres. 
+- NOTE: From sf to spatial* Classes to sp format, there will some sort of information lost
+
+## 4.1 Convert from sf to **Spatial*** Classes
+```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+childcare <- as_Spatial(childcare_sf)
+CHAS <- as_Spatial(CHAS_sf)
+mpsz <- as_Spatial(mpsz_sf)
+sg <- as_Spatial(sg_sf)
+```
+
+## 4.2 Convert from Spatial* to **sp** format
+- Will have the projection and coordinates
+
+```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+childcare_sp <- as(childcare, "SpatialPoints")
+CHAS_sp <- as(CHAS, "SpatialPoints")
+sg_sp <- as(sg, "SpatialPolygons")
+```
+
+My notes:
+
+- Difference between spatial df vs spatial class:
+  - When working with sp layer, there is no associated table. So all the attribute information will be gone. 
+  - We will only be left with the coordinates etc
+
+  
+## 4.3 Convert from sp to **spatstat ppp** format
+
+- Provide you with the explicit data model (e.g owin/rectangle)
+
+```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+childcare_ppp <- as(childcare_sp, "ppp")
+CHAS_ppp <- as(CHAS_sp, "ppp")
+
+plot(childcare_ppp)
+plot(CHAS_ppp)
+```
+
+
+```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+summary(childcare_ppp)
+summary(CHAS_ppp)
 ```
 
 ```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+# tmap_mode('view')
+# tm_shape(childcare_sf)+
+#   tm_dots(alpha=0.4,
+#           col="blue",
+#           size="0.05")+
+# tm_shape(CHAS_sf)+
+#   tm_dots(alpha=0.4,
+#           col="red",
+#           size="0.05")
+```
 
+
+Here we are switching back to plot mode:
+
+```{r echo=TRUE, eval=TRUE}
+# tmap_mode('plot')
 ```
