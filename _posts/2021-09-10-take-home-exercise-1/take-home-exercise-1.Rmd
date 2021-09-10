@@ -1160,8 +1160,8 @@ total_pop_map <- tm_shape(total_deaths_geo)+
 tmap_arrange(relative_risk_map, total_death_map, total_pop_map, ncol=3)
 ```
 
-- From the maps above, we can see that it is not always the case that those sub districts with a higher total deaths having a higher relative risk.
-- Areas with high population count and deaths has generally lower relative risk and vice versa. 
+- From the maps above, we can see that it is not always the case that those sub-districts with a higher total deaths having a higher relative risk.
+- Sub-districts with higher population and deaths has generally lower relative risk. Similarly, sub-districts with lower population and deaths count has generally higher relative risk.
 
 # 11. Conclusion
 Some of the conclusions that we can derive from this analysis includes:
