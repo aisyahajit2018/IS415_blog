@@ -6,14 +6,14 @@
       "description": "This blog consists of my learning journey for the module: IS415 Geospatial Analytics and Applications.",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-09-05T20:49:33+08:00"
+      "last_modified": "2021-09-10T19:38:53+08:00"
     },
     {
       "path": "index.html",
       "title": "IS415 blog",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-09-05T20:49:35+08:00"
+      "last_modified": "2021-09-10T19:38:55+08:00"
     }
   ],
   "collections": ["posts/posts.json"]
