@@ -61,7 +61,7 @@ for(p in packages){
 ```
 
 ```{r echo=TRUE, eval=TRUE, results="hide"}
-#install_github("gadenbuie/xaringanExtra")
+devtools::install_github("gadenbuie/xaringanExtra")
 library(xaringanExtra)
 ```
 
@@ -383,6 +383,11 @@ kable(head(dki_cov)) %>%
 
 ## 7.2 Calculate cumulative confirmed cases rate (i.e. cases per 10000 population) and the cumulative death cases rate by month
 
+The formula that will be used in this calculation is as such:
+
+- Cumulative confirmed cases rate  = (Total Confirmed cases per month and sub-district/Population of sub-district)*10000
+- Cumulative death cases rate = (Total Death cases per month and sub-district/Population of sub-district)*10000
+
 ### 7.2.1 Check for any NA values in the df
 ```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 colSums(is.na(dki_cov))
@@ -451,7 +456,733 @@ glimpse(cumu_death_rate)
 :::
 :::::
 
-here
+### 7.2.5 Perform calculation for relative risk
+
+Relative risk also known as standardized mortality rate (SMR) is sometimes used to compare the observed mortality rate to a national (or regional) standard. This means that we would want to compare the death rates of the individual sub districts to the national DKI death rates. 
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+rel_risk <- dki_cov_wogeo %>%
+  mutate(`TOTAL_DEATHS` = sum(`Meninggal`)) %>%
+  mutate(`REL_RISK` = (`TOTAL_DEATHS`*100)/ `TOTAL_DEATHS`/`JUMLAH_PEN`) %>%
+  select (`KODE_DESA`, `REL_RISK`)
+
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+glimpse(rel_risk)
+```
+:::
+:::::
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+total_deaths <- dki_cov_wogeo %>%
+  group_by(KODE_DESA, nama_kelurahan, JUMLAH_PEN)  %>%
+  summarise(`TOTAL_DEATHS` = sum(`Meninggal`))  %>%
+  ungroup()  %>%
+  select (`KODE_DESA`, `TOTAL_DEATHS`, `JUMLAH_PEN`, nama_kelurahan)
+
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+glimpse(total_deaths)
+```
+:::
+:::::
 
 
+
+
+
+ 8. Exploratory Data Analysis 
+
+## 8.1 Create a vector containing the months column names in ascending order
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+months_col <- c('MARET_2020','APRIL_2020','MEI_2020','JUNI_2020','JULI_2020','AGUSTUS_2020','SEPTEMBER_2020','OKTOBER_2020','NOVEMBER_2020','DESEMBER_2020','JANUARI_2021','FEBRUARI_2021','MARET_2021','APRIL_2021','MEI_2021','JUNI_2021','JULI_2021')
+```
+
+## 8.2 Cumulative confirmed cases rates 
+### 8.2.1 Time Series Box Plot - Cumulative confirmed cases rates
+#### 8.2.1.1 Create a list containing all the boxplots by months
+
+The following code chunk will perform 2 tasks:
+
+- Create a list called cc_boxplot_list to store the boxplots
+- For each month_year, create a boxplot using the ggplot2 package and store it in the cc_boxplot_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cc_boxplot_list <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  box_plot <- ggplot(cumu_cc_rate, aes_string(x = months_col[[i]])) +
+    geom_boxplot(color="midnight blue", fill="light sky blue") +
+    labs(title = months_col[[i]]) +
+    theme(plot.title = element_text(size = 10),
+          axis.title = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank())
+  cc_boxplot_list[[i]] <- box_plot
+}
+```
+
+#### 8.2.1.2 Plot boxplots to examine DKI Jakarta's COVID-19 cases rates across months 
+- Here we are using **ggarrange** function which is a useful function to arrange multiple ggplots on the same page
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+ggarrange(plotlist = cc_boxplot_list,
+          ncol = 5,
+          nrow = 4)
+```
+Here are some of the observations that we can draw from the boxplots of the cumulative confirmed cases rates above:
+
+- The distribution of DKI Jakarta's COVID-19 cumulative confirmed cases rates across the months are **right-skewed**.
+- In all of the months from March 2020 to July 2021, there are multiple sub-districts (kelurahan) which have extremely high cumulative confirmed cases rates as compared to the other sub-districts. This is indicated by the multiple far upper outliers.
+- As the range of the cumulative confirmed cases rate in DKI Jakarta increases over the months (indicated by the increase in the axis), the threshold defining an outlier also increases. 
+- From November 2020 onwards, two sub-districts are always noticeable at the far end of the upper outlier. 
+- Starting from October 2020 onwards, none of the sub-districts had  a cumulative confirmed case rate of 0.
+
+
+### 8.2.2 Time Series Histogram - Cumulative confirmed cases rates
+#### 8.2.2.1 Create a list containing all the histogram by months
+
+The following code chunk will perform 2 tasks:
+
+- Create a list called cc_histogram_list to store the histograms
+- For each month_year, create a histogram using the ggplot2 package and store it in the cc_histogram_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cc_histogram_list <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  hist_plot <- ggplot(cumu_cc_rate, aes_string(x = months_col[[i]])) +
+    geom_histogram(fill = "steel blue") +
+    labs(title = months_col[[i]]) +
+    theme(plot.title = element_text(size = 10),
+          axis.title = element_blank())
+  
+  cc_histogram_list[[i]] <- hist_plot
+}
+```
+
+#### 8.2.2.2 Plot histograms to examine DKI Jakarta's COVID-19 cumulative confirmed cases rates across months
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+ggarrange(plotlist = cc_histogram_list,
+          ncol = 5,
+          nrow = 4)
+```
+
+Here are some of the observations that we can draw from the cumulative confirmed cases histogram above:
+
+- The distribution of COVID-19 cumulative confirmed cases rates across the months are **right-skewed**.
+- In March 2020, the **majority** of the sub-districts (keluruhan) had a cumulative confirmed cases rate of **0**. This might be because the very first case finding in Indonesia was announced on **2nd March 2020** according to: [Situation report #5: COVID-19 pandemic - 24th March 2020 - Indonesia](https://reliefweb.int/report/indonesia/situation-report-5-covid-19-pandemic-24th-march-2020). 
+- Hence, as months passed and as cases spread across all the provinces in Indonesia, the number of sub-districts in DKI Jakarta having a cumulative confirmed case rate of 0 dropped. 
+- Starting from October 2020, none of the sub-districts had a cumulative confirmed case rate of 0. 
+
+
+## 8.3 Cumulative death cases rates
+### 8.3.1 Time Series Box Plot - Cumulative death cases rates
+#### 8.3.1.1 Create a list containing all the boxplots by months
+The following code chunk will perform 2 tasks:
+
+- Create a list called death_boxplot_list to store the boxplots
+- For each month_year, create a boxplot using the ggplot2 package and store it in the death_boxplot_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+# Create a list to store the boxplots
+death_boxplot_list <- vector(mode = "list", length = length(months_col))
+# For each month_year, create a boxplot using the ggplot2 package and store it in the boxplot_list created
+for (i in 1:length(months_col)) {
+  box_plot <- ggplot(cumu_death_rate, aes_string(x = months_col[[i]])) +
+    geom_boxplot(color="firebrick", fill="light coral") +
+    labs(title = months_col[[i]]) +
+    theme(plot.title = element_text(size = 10),
+          axis.title = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank())
+  death_boxplot_list[[i]] <- box_plot
+}
+```
+
+#### 8.3.1.2 Plot boxplots to examine DKI Jakarta's COVID-19 death cases rates across months 
+- Here we are using **ggarrange** function which is a useful function to arrange multiple ggplots on the same page
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+ggarrange(plotlist = death_boxplot_list,
+          ncol = 5,
+          nrow = 4)
+```
+
+Here are some of the observations that we can draw from the boxplots of the cumulative death cases rates above:
+
+- In comparison to the cumulative confirmed cases rates boxplots, the distribution of DKI Jakarta's COVID-19 cumulative death cases rates across the months are **also right-skewed**.
+- Similarly, in all of the months from March 2020 to July 2021, there are multiple sub-districts which have high cumulative death cases rates as compared to the other sub-districts.
+- As the range of the cumulative death cases rates in DKI Jakarta increases over the months, the threshold defining an outlier also increases. 
+- Starting from February 2021, one sub-district can be seen always appearing at the far end of the upper outlier. Additionally, starting from February 2021, the minimum of the boxplot (minimum cumulative death cases rates) is no longer 0. 
+
+### 8.3.2 Time Series Histogram - Cumulative death cases rates
+#### 8.3.2.1 Create a list containing all the histogram by months
+The following code chunk will perform 2 tasks:
+
+- Create a list called death_histogram_list to store the histograms
+- For each month_year, create a histogram using the ggplot2 package and store it in the death_histogram_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+death_histogram_list <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  hist_plot <- ggplot(cumu_death_rate, aes_string(x = months_col[[i]])) +
+    geom_histogram(fill = "firebrick") +
+    labs(title = months_col[[i]]) +
+    theme(plot.title = element_text(size = 10),
+          axis.title = element_blank())
+  
+  death_histogram_list[[i]] <- hist_plot
+}
+```
+
+#### 8.3.2.2 Plot histograms to examine DKI Jakarta's COVID-19 cumulative death cases rates across months
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+ggarrange(plotlist = death_histogram_list,
+          ncol = 5,
+          nrow = 4)
+```
+
+
+Here are some of the observations that we can draw from the histograms of the cumulative death cases rates above:
+
+- The distribution of COVID-19 cumulative death cases rates across the months are **right-skewed**.
+- In March 2020, the **majority** of the sub-districts (keluruhan) had a cumulative death cases rates of **0**. 
+- As months passed, the number of sub-districts in DKI Jakarta having a cumulative death cases rate of 0 dropped. 
+- Starting from February 2021 onwards, none of the sub-districts had a cumulative death cases rate of 0.
+
+
+# 9. Thematic Mapping
+
+As seen from the previous sections, both the cumulative confirmed cases and death cases rates by month vary significantly. Hence, when we perform thematic mapping, we should carefully choose how we decide to define the intervals that are able to show significant spatio-temporal patterns. 
+
+Additionally, although it is known that the distribution for both the cumulative confirmed cases and death cases rates are right skewed, I will still be showing the difference between the maps with Manually Defined classification and Jenks classification. Equal and Quantiles classification will not be plotted for this analysis as: 
+
+- Equal classification is more appropriate for variables with a **uniform** distribution
+- Quantiles classification is more well suited for **linearly** distributed data.
+
+## 9.1 Time-series choropleth map of COVID-19 rates - **Manual Classification**
+### 9.1.1 Check summary of cumulative confirmed cases rate by month (POSITIF)
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+summary(cumu_cc_rate)
+```
+
+- From March 2020 to July 2021, it can be seen that the cumulative confirmed cases rate ranges from 0 to about 3810. 
+- If we were to manually define the intervals, we would get 9 classes of intervals of 450. 
+
+
+### 9.1.2 Check summary of cumulative death cases rate by month (Meninggal)
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+summary(cumu_death_rate)
+```
+
+- From March 2020 to July 2021, it can be seen that the cumulative death cases rate ranges from 0 to about 42. 
+- If we were to manually define the intervals, we would get 9 classes intervals of 5. 
+
+## 9.1.3 Join cumulative confirmed rates with dkij_slice sf dataframe 
+
+### 9.1.3.1 Cumulative confirmed cases rates 
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cumu_cc_dkij <- left_join(dkij_slice, cumu_cc_rate, by = c('KODE_DESA' ='KODE_DESA', 'JUMLAH_PEN' = 'JUMLAH_PEN'))
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+glimpse(cumu_cc_dkij)
+```
+:::
+:::::
+
+### 9.1.3.2 Cumulative death cases rates 
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cumu_death_dkij <- left_join(dkij_slice, cumu_death_rate, by = c('KODE_DESA' ='KODE_DESA', 'JUMLAH_PEN' = 'JUMLAH_PEN' ))
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+glimpse(cumu_death_dkij)
+```
+:::
+:::::
+
+
+### 9.1.4 Time-series choropleth map of cumulative confirmed cases rates (Manual Classification)
+#### 9.1.4.1 Create list containing all maps by months
+The following code chunk will perform 2 tasks:
+
+- Create a list called cc_map_list to store the maps
+- For each month_year, create a map using the tmap package and store it in the cc_map_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cc_map_list_manual <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- tm_shape(cumu_cc_dkij) +
+            tm_fill(col = months_col[[i]],
+                    palette = 'Blues',
+                    breaks = c(0, 450, 900, 1350, 1800, 2250, 2700, 3150, 3600, 4050)
+                    
+                    ) +
+            tm_borders(lwd = 0.1,
+                       alpha = 0.3) +
+            tm_layout(panel.show = TRUE,
+                      panel.labels = months_col[[i]],
+                      panel.label.color = 'black',
+                      panel.label.size = 0.5,
+                      legend.show = TRUE,
+                      legend.text.size = 0.5,
+                      inner.margins = 0
+                      )
+  cc_map_list_manual[[i]] <- cmap
+}
+```
+
+#### 9.1.4.2 Arrange maps to create a time-series visualisation of choropleth maps across months
+```{r echo=TRUE, layout="l-page", fig.width=5, fig_height=5}
+tmap_arrange(cc_map_list_manual, outer.margins=0, ncol = 3)
+```
+
+
+### 9.1.5 Time-series choropleth map of cumulative death cases rates (Manual Classification)
+#### 9.1.4.1 Create list containing all maps by months
+The following code chunk will perform 2 tasks:
+
+- Create a list called death_map_list to store the maps
+- For each month_year, create a map using the tmap package and store it in the death_map_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+death_map_list_manual <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- tm_shape(cumu_death_dkij) +
+            tm_fill(col = months_col[[i]],
+                    palette = 'Reds',
+                    breaks = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45)) +
+            tm_borders(lwd = 0.1,
+                       alpha = 0.3) +
+            tm_layout(panel.show = TRUE,
+                      panel.labels = months_col[[i]],
+                      panel.label.color = 'black',
+                      panel.label.size = 0.5,
+                      legend.show = TRUE, 
+                      legend.text.size = 0.5,
+                      inner.margins = 0
+                      )
+  death_map_list_manual[[i]] <- cmap
+}
+```
+
+#### 9.1.5.2 Arrange maps to create a time-series visualisation of choropleth maps across months
+```{r echo=TRUE, layout="l-page", fig.width=6, fig_height=5}
+tmap_arrange(death_map_list_manual, ncol = 3, outer.margins=0)
+```
+
+From both the cumulative confirmed and death cases maps above, some observations that can be found are:
+
+- Sub-districts in the Central Region of Jakarta had higher COVID-19 cumulative confirmed cases rate which is indicated by the darker shade of blue which can be visible from Feb 2021 onwards.
+- Sub-districts with higher COVID-19 cumulative cases rates also had higher cumulative death cases rates which is indicated by the darker shade of red. Again, this can be seen in the Central Region from Jan 2021 onwards.
+- The spatial patterns in the earlier months however can hardly be observed as this is due to the manual classification used.
+
+Some disadvantages that are commonly known when using this manual classification are:
+
+- Intervals of 450 will have the tendency to over-generalize the data since the cumulative confirmed cases rates in the earlier months (March 2020 to November 2020) are relatively low as compared to the later months. This will also result in loss of important spatial patterns which we would want to avoid. 
+- Similarly, for cumulative death cases rates, intervals of 5 may not be ideal as we are unable to capture important patterns of those cumulative death cases rates that are relatively low in the earlier months. 
+- Both the cumulative confirmed cases and death cases rates are right skewed. Hence, those outliers that are observed in the previous boxplots are more likely to produce empty classes. 
+
+Therefore, since our distribution for both cumulative confirmed cases and death cases rates are right skewed, it would be better to use Natural Breaks classification to plot the choropleth maps for both cumulative confirmed cases and death rates instead.
+
+
+## 9.2 Time-series choropleth map of COVID-19 rates (Jenks Classification)
+
+### 9.2.1 Time-series choropleth map of cumulative confirmed cases rates (Jenks Classification)
+#### 9.2.1.1 Create list containing all maps by months
+The following code chunk will perform 2 tasks:
+
+- Create a list called cc_map_list to store the maps
+- For each month_year, create a map using the tmap package and store it in the cc_map_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cc_map_list_jenks <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- tm_shape(cumu_cc_dkij) +
+            tm_fill(col = months_col[[i]],
+                    palette = 'Blues',
+                    style = 'jenks',
+                    n = 5) +
+            tm_borders(lwd = 0.1,
+                       alpha = 0.3) +
+            tm_layout(panel.show = TRUE,
+                      panel.labels = months_col[[i]],
+                      panel.label.color = 'black',
+                      panel.label.size = 0.5,
+                      legend.show = TRUE,
+                      legend.text.size = 0.5,
+                      inner.margins = 0)
+  cc_map_list_jenks[[i]] <- cmap
+}
+```
+
+#### 9.2.1.2 Arrange maps to create a time-series visualisation of choropleth maps across months
+```{r echo=TRUE, layout="l-page", fig.width=6, fig_height=5}
+tmap_arrange(cc_map_list_jenks, ncol = 3, outer.margins=0)
+```
+
+- With the Jenks classification, Spatial-temporal patterns can now be observed for all months. 
+- In March 2020 when COVID-19 outbreak first started in Indonesia, the most obvious cluster that can be seen in the sub-districts located at the South West region of Jakarta. 
+- This began to change over the months as more clusters are formed near the central and north region of DKI Jakarta. This change can be seen in August 2020, with a higher concentration of confirmed cases in the central region, indicated by a darker shade of blue.
+- Additionally, from August 2020 to July 2021, there is a particular sub-district in the central region of DKI Jakarta that has the darkest shade of blue. Referring to our boxplot created previously, we can now confirm that the uppermost outlier for the boxplots from August 2020 to July 20201 is in fact this particular sub-district. 
+
+
+### 9.2.2 Time-series choropleth map of cumulative death cases rates (Jenks Classification)
+#### 9.2.2.1 Create list containing all maps by months
+The following code chunk will perform 2 tasks:
+
+- Create a list called death_map_list to store the maps
+- For each month_year, create a map using the tmap package and store it in the death_map_list created
+
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+death_map_list_jenks <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- tm_shape(cumu_death_dkij) +
+            tm_fill(col = months_col[[i]],
+                    palette = 'Reds',
+                    style = 'jenks',
+                    n = 5) +
+            tm_borders(lwd = 0.1,
+                       alpha = 0.3) +
+            tm_layout(panel.show = TRUE,
+                      panel.labels = months_col[[i]],
+                      panel.label.color = 'black',
+                      panel.label.size = 0.5,
+                      legend.show = TRUE,
+                      legend.text.size = 0.5,
+                      inner.margins = 0)
+  death_map_list_jenks[[i]] <- cmap
+}
+```
+
+#### 9.2.2.2 Arrange maps to create a time-series visualisation of choropleth maps across months
+```{r echo=TRUE, layout="l-page", fig.width=6, fig_height=5}
+tmap_arrange(death_map_list_jenks, ncol = 3, outer.margins=0)
+```
+
+
+- Similarly, for the choropleth maps of cumulative death cases rates created with the Jenks classification, spatial-temporal patterns can now be observed for all months. 
+- In March 2020, the clusters for the cumulative death rates are at random sub-districts. However, as months passed, the most obvious cluster that had a more concentrated cumulative death rates are at the sub-districts of the central region of DKI Jakarta. This can be seen from August 2020 to November 2020 where the centre sub-districts are in a darker shade of red.  
+- One interesting find here would be that, for the particular sub-district that had the highest cumulative confirmed cases rate previously from August 2020 to July 2021, it instead had the highest cumulative death cases rate only from January 2021 onwards. 
+
+
+Overall, although choropleth maps provides a quick and easy way to spot spatial patterns, the observations are not conclusive as our data contains outliers. The next section will attempt to determine if these are more significant patterns that can be derived using extreme value maps. 
+
+
+
+
+# 10. Analytical Mapping
+
+As it is evident from the boxplots created earlier, the COVID data contains outliers. Hence, we can also make use of extreme value maps like percentile and box map to highlight these values at the lower and upper end of the scale. 
+
+## 10.1 Box Map
+### 10.1.1 Functions needed to plot box maps
+- Get var function: For extracting the variable as vector out of the dataframe
+- Box breaks function: Creating break points for the box map into 6 classes to classify the data points
+  - "lower outlier"
+  - "1 - 25%"
+  - "25% - 50%"
+  - "50% - 75%"
+  - "> 75%"
+  - "upper outlier"
+
+```{r echo=TRUE, eval=TRUE}
+# Extract variable as vector out of sf dataframe
+get.var <- function(vname, df) {
+  v <- df[vname]
+  v <- unname(v[[1]])
+  return(v)
+}
+# To create break points for box map
+boxbreaks <- function(v, mult=1.5) {
+  qv <- unname(quantile(v))
+  iqr <- qv[4] - qv[2]
+  upfence <- qv[4] + mult * iqr
+  lofence <- qv[2] - mult * iqr
+  # initialize break points vector
+  bb <- vector(mode="numeric",length=7)
+  # logic for lower and upper fences
+  if (lofence < qv[1]) { # no lower outliers
+    bb[1] <- lofence
+    bb[2] <- floor(qv[1])
+  } else {
+    bb[2] <- lofence
+    bb[1] <- qv[1]
+  }
+  if (upfence > qv[5]) { # no upper outliers
+    bb[7] <- upfence
+    bb[6] <- ceiling(qv[5])
+  } else {
+    bb[6] <- upfence
+    bb[7] <- qv[5]
+  }
+  bb[3:5] <- qv[2:4]
+  return(bb)
+}
+```
+
+### 10.1.2 Box map function to plot the box map
+```{r echo=TRUE, eval=TRUE}
+# Boxmap function
+boxmap <- function(vnam, df, 
+                   legtitle=NA,
+                   mult=1.5){
+  var <- get.var(vnam,df)
+  bb <- boxbreaks(var)
+  tm_shape(df) +
+     tm_fill(vnam,title=legtitle,
+             breaks=bb,
+             palette="Blues",
+          labels = c("lower outlier", 
+                     "< 25%", 
+                     "25% - 50%", 
+                     "50% - 75%",
+                     "> 75%", 
+                     "upper outlier"))  +
+  tm_borders(lwd=0.1, alpha=0.3) +
+  tm_layout(legend.show = TRUE)
+}
+```
+
+### 10.1.3 Test boxbreaks function 
+```{r echo=TRUE,  eval=TRUE}
+var <- get.var("JULI_2021", cumu_cc_dkij)
+boxbreaks(var)
+```
+
+### 10.1.4 Time-series box map of cumulative confirmed cases rates
+```{r echo=TRUE, eval=TRUE}
+cc_map_list_boxmap <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- boxmap(months_col[[i]], cumu_cc_dkij)
+  cc_map_list_boxmap[[i]] <- cmap
+}
+```
+
+```{r echo=TRUE, layout="l-page", fig.width=6, fig_height=5}
+tmap_arrange(cc_map_list_boxmap, ncol = 3, outer.margins=0)
+```
+
+
+- From the above box maps, more sub districts are in a darker blue shade. From this, we can infer that more sub districts are in the upper outlier class which is also confirming the observation that we have seen in the earlier boxplots. 
+- Although previously it is thought that the concentration of confirmed cases are in the centre region, we can see that over the months, the southern region of Jakarta seems to be appearing more in the upper outlier class. This can be seen from January 2021 onwards. This observation cannot be seen in the choropleth maps plotted previously using jenks classification.
+
+### 10.1.5 Time-series box map of cumulative death cases rates
+```{r echo=TRUE, eval=TRUE}
+# Extract variable as vector out of sf dataframe
+get.var <- function(vname, df) {
+  v <- df[vname]
+  v <- unname(v[[1]])
+  return(v)
+}
+
+boxmap <- function(vnam, df, 
+                   legtitle=NA,
+                   mult=1.5){
+  var <- get.var(vnam,df)
+  bb <- boxbreaks(var)
+  tm_shape(df) +
+     tm_fill(vnam,title=legtitle,
+             breaks=bb,
+             palette="Reds",
+          labels = c("lower outlier", 
+                     "< 25%", 
+                     "25% - 50%", 
+                     "50% - 75%",
+                     "> 75%", 
+                     "upper outlier"))  +
+  tm_borders(lwd=0.1, alpha=0.3) +
+  tm_layout(title = NA,
+            legend.show = TRUE)
+}
+```
+
+```{r echo=TRUE, eval=TRUE}
+death_map_list_boxmap <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- boxmap(months_col[[i]], cumu_death_dkij)
+  death_map_list_boxmap[[i]] <- cmap
+}
+```
+
+```{r echo=TRUE, layout="l-page", fig.width=6, fig_height=5}
+tmap_arrange(death_map_list_boxmap, ncol = 3, outer.margins=0)
+```
+
+
+
+- Similarly, for the cumulative death cases rate, more sub districts are in a darker red shade as seen from the above box maps. From this, we can infer that more sub districts are in the upper outlier class which is also confirming the observation that we have seen in the earlier boxplots. 
+- We can now see that the concentration of confirmed cases are not only in the centre region, but also spread out across the other regions. 
+- There is also no clear indication as to which sub-district has the highest cumulative death cases rate over time as the rates seems to spread out more to all of the sub-districts in all DKI Jakarta's region. 
+- However, we can see that towards the north of DKI Jakarta, the sub-districts had a relatively low cumulative death cases rate compared to the other areas.
+- The only observation that is inaccurate would be the box map plotted for the month of March 2020 as almost all the sub-districts is classified in the upper outlier class. This might be due to the fact that most of the sub-districts having a lower death rate in March 2020 since COVID-19 outbreak only started in that month. This observation can also be seen from our boxplot and histogram created previously. 
+- Another alternative to identify these outliers is to use is Percentile Maps which is shown in the next section. 
+
+
+## 10.2 Percentile Maps
+### 10.2.1 get.var function for Percentile Maps
+```{r echo=TRUE, eval=TRUE}
+get.var <- function(vname,df) {
+  v <- df[vname] %>% 
+    st_set_geometry(NULL)
+  v <- unname(v[[1]])
+  return(v)
+}
+```
+
+### 10.2.2 Time-series percentile map of cumulative confirmed cases rates
+#### 10.2.2.1 Time-series percentile map function
+```{r echo=TRUE, eval=TRUE}
+# Creating the percentmap function
+percentmap <- function(vnam, df, legtitle=NA){
+  percent <- c(0,.01, .1,.5,.9,.99,1)
+  var <- get.var(vnam,df)
+  bperc <- quantile (var, percent)
+  tm_shape (cumu_cc_dkij) + 
+    tm_polygons() + 
+    tm_shape(df)+
+    tm_fill(vnam, title=legtitle, breaks=bperc, palette="Blues", 
+            labels = c("< 1%", "1%-10%", "10%-50%", "50%-90%", "90%-99%", ">99%"))+
+     tm_borders(lwd=0.1, alpha = 0.3) +
+    tm_layout(legend.show = TRUE)
+    
+}
+```
+
+#### 10.2.2.2 Create a list containing all maps by months
+```{r echo=TRUE, eval=TRUE}
+cc_map_list_percentile <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- percentmap(months_col[[i]], cumu_cc_dkij)
+  cc_map_list_percentile[[i]] <- cmap
+}
+```
+
+#### 10.2.2.3 Create visualistion of percentile maps across months 
+```{r echo=TRUE, layout="l-page", fig.width=6, fig_height=5}
+tmap_arrange(cc_map_list_percentile, ncol = 3, outer.margins=0)
+```
+
+- From the percentile maps shown above, we can see that more sub-districts are classified as 50% quantile and above classes.
+- In comparison to the box maps above, the observations are quite similar. 
+- However, it becomes more evident that the sub-districts in the centre region are the outliers here.
+
+
+### 10.2.3 Time-series percentile map of cumulative confirmed death rates
+#### 10.2.3.1 Time-series percentile map function
+```{r echo=TRUE, eval=TRUE}
+# Creating the percentmap function
+percentmap <- function(vnam, df, legtitle=NA){
+  percent <- c(0,.01, .1,.5,.9,.99,1)
+  var <- get.var(vnam,df)
+  bperc <- quantile (var, percent)
+  tm_shape (cumu_death_dkij) + 
+    tm_polygons() + 
+    tm_shape(df)+
+    tm_fill(vnam, title=legtitle, breaks=bperc, palette="Reds", 
+            labels = c("< 1%", "1%-10%", "10%-50%", "50%-90%", "90%-99%", ">99%"))+
+     tm_borders(lwd=0.1, alpha = 0.3) +
+    tm_layout(legend.show = TRUE)
+    
+}
+```
+
+#### 10.2.3.2 Create a list containing all maps by months
+```{r echo=TRUE, eval=TRUE}
+death_map_list_percentile <- vector(mode = "list", length = length(months_col))
+for (i in 1:length(months_col)) {
+  cmap <- percentmap(months_col[[i]], cumu_death_dkij)
+  death_map_list_percentile[[i]] <- cmap
+}
+```
+
+#### 10.2.2.3 Create visualistion of percentile maps accross months 
+```{r echo=TRUE, layout="l-page", fig.width=6, fig_height=5}
+tmap_arrange(death_map_list_percentile, ncol = 3, outer.margins=0)
+```
+
+
+- From the percentile maps shown above, we can see that more sub-districts are classified as 50% quantile and above classes.
+- In comparison to the box maps above, we can now clearly see the specific regions that are in the darker red shade and this would mean that they are the outliers that we saw in the box plots previously. 
+- Over the months, we can also see clearly which are the outliers that below to the upper class indicated by the darkest red shade (>99% quantile).
+
+
+## 10.3 Relative Risk map vs Total Deaths map 
+```{r echo=TRUE, eval=TRUE}
+rel_risk_geo <- left_join(dkij_slice, rel_risk, by = c('KODE_DESA' ='KODE_DESA'))
+total_deaths_geo <- left_join(dkij_slice, total_deaths, by = c('KODE_DESA' ='KODE_DESA', 'JUMLAH_PEN'='JUMLAH_PEN'))
+
+relative_risk_map <- tm_shape(rel_risk_geo) +
+  tm_fill(col = "REL_RISK", n = 5, style = "jenks", title = "Relative Risk", palette="Greens") +
+   tm_layout(main.title = "Relative Risk",
+             main.title.position = "center",
+             main.title.size = 1.5) + 
+  tm_borders(alpha = 0.3) 
+
+total_death_map <- tm_shape(total_deaths_geo)+
+  tm_fill(col="TOTAL_DEATHS", style="jenks", n = 5, title= "Total Deaths", palette="Reds") +
+   tm_layout(main.title = "Total Deaths",
+             main.title.position = "center",
+             main.title.size = 1.5) +
+  tm_borders(alpha = 0.3) 
+
+total_pop_map <- tm_shape(total_deaths_geo)+
+  tm_fill(col="JUMLAH_PEN", style="jenks", n = 5, title= "Total Population", palette="Purples") +
+   tm_layout(main.title = "Total Population",
+             main.title.position = "center",
+             main.title.size = 1.5) +
+  tm_borders(alpha = 0.3) 
+
+
+
+tmap_arrange(relative_risk_map, total_death_map, total_pop_map, ncol=3)
+```
+
+- From the maps above, we can see that it is not always the case that those sub districts with a higher total deaths having a higher relative risk.
+- Areas with high population count and deaths has generally lower relative risk and vice versa. 
+
+# 11. Conclusion
+Some of the conclusions that we can derive from this analysis includes:
+
+- Using manual classification is not recommended whenever there is a right skewed distribution in our data, unless we know specifically which intervals are the best to use, as it shows little to no important patterns.
+- Using a proper data classification when plotting chloropleth maps is crucial as more significant patterns can be observed (more darker shades or blue and red) for both cumulative confirmed and death cases rate.
+- It is generally useful to further enhance our analysis when our data consists of outliers using percentile maps and box maps.However, different maps have the ability to show different kinds of patterns. We should ultimately choose specific ones to fit our data.
+- The patterns from the spatial temporal analysis of cumulative confirmed cases rate were more significant when using a box map while the patterns from the spatial temporal analysis of cumulative death cases rate were more significant when using a percentile map. 
+- In the Relative Risk map, it shows that sub-districts with higher total deaths does not necessarily lead to a higher relative risk.
+- Similarly, in the chloropleth maps using Jenks classification, it also shows that sub-districts with a higher cumulative confirmed cases rates does not necessarily lead to a a higher cumulative death cases rates.
+
+# 12. References
+- Anselin, L. (2020, September 15). Basic mapping. GeoDa on Github. Retrieved from: https://geodacenter.github.io/workbook/3a_mapping/lab3a.html
+
+- Anselin, L. (2018, August 3). Maps for rates or proportions. GeoDa on Github.  Retrieved from: https://geodacenter.github.io/workbook/3b_rates/lab3b.html
+
+- Gimond, M. (2021, September 07). E mapping rates in R | Intro to GIS and spatial analysis. Main repos | mgimond.github.io. Retrieved from: https://mgimond.github.io/Spatial/mapping-rates-in-r.html#raw-rates
+
+- Lovelace, R., Nowosad, J., & Muenchow, J. (n.d.). Chapter 8 making maps with R. Welcome | Geocomputation with R. Retrieved from: https://geocompr.robinlovelace.net/adv-map.html
+
+- Situation report #5: COVID-19 pandemic - 24th March 2020 - Indonesia. (24 March 2020). ReliefWeb. Retrieved from: https://reliefweb.int/report/indonesia/situation-report-5-covid-19-pandemic-24th-march-2020
+
+- Tin Seong.K (2021, August 30) In-class Exercise 3: Analytical Mapping. Retrieved from: https://is415.netlify.app/in-class_ex/in-class_ex03/in-class_ex03#1
 

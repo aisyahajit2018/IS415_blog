@@ -1,5 +1,6 @@
 name: "IS415_blog"
 title: "IS415 blog"
+theme: theme.css
 description: |
   IS415 blog
 output_dir: "_site"
@@ -8,7 +9,7 @@ navbar:
     - text: "Take-home Exercise"
       menu:
       - text: "Take-home Exercise 1"
-        href: 
+        href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-10-take-home-exercise-1/
     - text: "Hands-on Exercise"
       menu:
         - text: "Hands-on Exercise 2"
