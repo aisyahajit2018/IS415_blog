@@ -1,0 +1,457 @@
+---
+title: "Take-home Exercise 1"
+description: |
+  This exercise provides an in-depth Geospatial Analysis of the cumulative COVID-19 confirmed cases and death rates in its sub-districts (keluruhan) using appropriate thematic and analytics mapping techniques and R functions. 
+author:
+  - name: Nor Aisyah
+    url: https://www.linkedin.com/in/nor-aisyah/
+date: 09-10-2021
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# 1. Background Information
+
+This analysis aims to analyse the spatio-temporal patterns of monthly cumulative confirmed COVID-19 rate and death cases rate at keluruhan (sub-district) level of Daerah Khusus Ibukota Jakarta (DKI Jakarta). In other words, this analysis is done to detect which sub-districts had a relatively higher number of confirmed cases and death cases rates and how they changed over time. Additionally, the temporal interval will be at the last day of the month while the geographic will be at the sub-district.
+
+# 2. Dataset
+The data set used for this analysis includes:
+
+1. **Aspatial**: Daily updates of COVID-19 statistics in DKI Jakarta at https://riwayat-file-covid-19-dki-jakarta-jakartagis.hub.arcgis.com. The cumulative data is available in the **"data" worksheet**.
+
+2. **Geospatial**: Shapefile (SHP) Batas Desa Provinsi DKI Jakarta provided at  
+[PODES 2019](https://www.indonesia-geospasial.com/2020/04/download-shapefile-shp-batas-desa.html).
+There are other geospatial data in ESRI shapefile format at different geographical levels available at [Indonesia Geospatial](https://www.indonesia-geospasial.com/). But for the purpose of this analysis, only *SHP Batas Desa Provinsi DKI Jakarta will be used*.
+
+Before we proceed with the analysis, there were some issues found when downloading the aspatial dataset which we need to take note of:
+
+- Although we are expected to download 19 files from **31 January 2020 - 31 July 2021** (19 months), the link only has data files starting from 25 March 2020 onwards.
+- Additionally, the link for 31st January 2021 Riwayat File Covid-19 DKI Jakarta was inaccessible.
+
+Hence, the remedy is to:
+
+- Take data files starting from **31st March 2020** instead
+- For January 2021, use the data file for 30th January 2021 instead.
+- Altogether, instead of 19 files, there are a total of 17 files to be downloaded.
+
+# 3. Install and Load R packages 
+
+This code chunk performs 3 tasks:
+
+- A list called packages will be created and will consists of all the R packages required to accomplish this hands-on exercise.
+- Check if R packages on package have been installed in R and if not, they will be installed.
+- After all the R packages have been installed, they will be loaded.  
+
+```{r echo=TRUE, eval=TRUE}
+packages <- c('sf', 'tidyverse', 'tmap', 'kableExtra', 'ggpubr', 'devtools', 'gifski')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+```{r echo=TRUE, eval=TRUE, results="hide"}
+#install_github("gadenbuie/xaringanExtra")
+library(xaringanExtra)
+```
+
+```{r panelset, echo=FALSE}
+xaringanExtra::use_panelset()
+```
+
+More on the packages used:
+
+- **sf**: used for importing, managing, and processing **geospatial** data
+  - specifically **vector-based** geospatial data
+- **tidyverse**: used for importing, wrangling and visualising data. It consists of a family of R packages, such as:
+  - **readr** for importing csv data,
+  - **readxl** for importing Excel worksheet,
+  - **tidyr** for manipulating data,
+  - **dplyr** for transforming data, and
+  - **ggplot2** for visualising data
+- **tmap**: provides functions for plotting cartographic **quality** *static* point patterns maps or *interactive* maps by using leaflet API.
+- **kableExtra**: Designed to extend the basic functionality of tables. In this exercise, I will be using it to construct complex tables and customize styles using a readable syntax. 
+- **devtools**: used for installing any R packages which is not available in RCRAN. In this exercise, I will be installing using devtools to install the package **xaringanExtra** which is still under development stage. 
+- **xaringanExtra**: is an enhancement of xaringan package. As it is still under development stage, we can still install the current version using install_github function of devtools. This package will be used to add Panelsets to contain both the r code chunk and results whereever applicable.
+
+# 4. Importing Geospatial Data
+## 4.1 Importing polygon feature data in shapefile format
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+dkij_sf <- st_read("data/geospatial", layer="BATAS_DESA_DESEMBER_2019_DUKCAPIL_DKI_JAKARTA")
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+glimpse(dkij_sf)
+```
+:::
+:::::
+
+
+- From the results above we can see that:
+  - There are **269  multipolygon features and 161 fields** in the sf data frame. 
+  - **WGS 84** is the Geodetic Coordinate Reference Systems
+
+## 4.2 Retrieve coordinate reference system from object using **st_crs** of sf package
+```{r echo=TRUE, eval=TRUE}
+st_crs(dkij_sf)
+```
+
+- From the results above we can see that:
+  - The EPSG is 4326 due to the Geodetic Coordinate Reference Systems being WGS 84.
+  - Hence, what we need to do next is to assign the correct EPSG code to this simple feature data frame.
+  
+## 4.3 Assign EPSG code to a simple feature data frame
+### 4.3.1 Assign correct EPSG code
+- The national Projected Coordinates Systems of Indonesia is **DGN95 / Indonesia TM-3 zone 54.1**. 
+- Hence, when we search this information up in https://epsg.io/ to retrieve the EPSG code, we get **23845** as the EPSG code.
+- So, we can assign this EPSG code to st_crs by using **st_set_crs** of sf package as seen in the code chunk below:
+
+```{r echo=TRUE, eval=TRUE}
+dkij_sf23845<- st_transform(dkij_sf, crs = 23845)
+```
+
+### 4.3.2 Check CSR again
+```{r echo=TRUE, eval=TRUE}
+st_crs(dkij_sf23845)
+```
+
+### 4.3.3 Plot dkij_sf23845
+```{r echo=TRUE, eval=TRUE}
+plot(dkij_sf23845)
+```
+
+- From the plots above, we can roughly see that there are outer islands in map. Hence, we would need to exclude them from our analysis. 
+
+# 5. Geospatial Data Wrangling
+
+## 5.1 Exclude outer islands from DKI Jakarta 
+- With prior research to what exactly are the outer islands of DKI Jakarta, my initial findings was that these outer islands are called **Thousand Islands** which can be translated to **Kepulauan Seribu**. 
+- However, since this research is not enough, to help us confirm on what exactly defines the outer islands of DKI Jakarta, we can make use of **tmap_mode** of tmap package to look into the islands outside of DKI jakarta and check the field name.
+- The idea is that if there is a pattern found within these outer islands (ie. a common field that defines them), we will use that field value to exclude them from the geospatial data.
+- We will also be using the polygon of the **KAB_KOTA** field to look into this as the English translation for KAB_KOTA is Cities.
+
+### 5.1.1 Check islands using **tmap_mode**
+```{r echo=TRUE, eval=TRUE}
+tmap_mode('view')
+tm_shape(dkij_sf23845)+
+  tm_polygons("KAB_KOTA")
+```
+
+Here we are switching back to plot mode since each interactive mode will consume a connection: 
+
+```{r echo=TRUE, eval=TRUE}
+tmap_mode('plot')
+```
+
+From the interactive map above, we can see that:
+
+- From the colors legend, there are 6 unique values (Excluding missing value) for the KAB_KOTA field. 
+- 5 out of these 6 unique values begins with **"JAKARTA"**. To understand these fields better, the translations are:
+  - JAKARTA BARAT: West Jakarta
+  - JAKARTA PUSAT: Center Jakarta
+  - JAKARTA SELATAN: South Jakarta
+  - JAKARTA TIMUR: East Jakarta
+  - JAKARTA UTARA: North Jakarta
+- The color legend also helps us to see better the cardinal directions of these cities and whether there is any overlap. For example, JAKARTA PUSAT represented in Yellow is at the center while JAKARTA UTARA represented in Blue is at the north.  
+- When researching on these cities further, they are actually called the **5 administrative cities** (kota administrasi) which form the Special Capital Region of Jakarta, Indonesia also known as DKI Jakarta in Indonesian language.
+- Hence when zooming in to the only value that does not begin with "JAKARTA" which is **"KEPULAUAN SERIBU"**, we can see for ourselves that it is in fact this value that is referring to the outer islands of Jakarta.
+
+### 5.1.2 Exclude outer islands ("KEPULAUAN SERIBU") from DKI Jakarta using **filter** function
+```{r echo=TRUE, eval=TRUE}
+dkij_5cities <- filter(dkij_sf23845, KAB_KOTA != "KEPULAUAN SERIBU")
+```
+
+### 5.1.3 Plot dkij_5cities
+```{r echo=TRUE, eval=TRUE}
+plot(dkij_5cities)
+plot(dkij_5cities["KAB_KOTA"])
+```
+
+## 5.2 Retain first 9 fields using **basic indexing** of baseR.
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+dkij_slice<- dkij_5cities[1:9]
+```
+:::
+
+::: {.panel}
+## Head {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+head(dkij_slice)
+```
+:::
+:::::
+
+From the results above, we can see that the remaining fields after slicing are as follows: 
+
+- OBJECT_ID  
+- KODE_DESA
+- DESA
+- KODE
+- PROVINSI
+- KAB_KOTA
+- KECAMATAN    
+- DESA_KELUR 
+- JUMLAH_PEN  
+
+# 6. Importing, Extracting and Wrangling Aspatial Data  
+
+During the first try of reading the excel files, there were some data issues encountered:
+
+- **Duplicated column names**: Some of the excel files either contained 2 *ID_KEL* columns or 2 *Meninggal columns*. 
+- **Required columns containing NA**: Some of the excel files that contained 2 of the *Meninggal* columns, have different value where the first column consists of all NA values while the second column was without NA values. 
+- **Required column containing other values**: For *ID_KEL* column, there are some string values (ie. "LUAR DKI JAKARTA", "PROSES UPDATE DATA", "BELUM DIKETAHUI") which we need to remove in order to successfully integrate with the geospatial data later. 
+
+Hence, when reading the excel files, we should aim to resolve these data issues first before successfully integrating the monthly data into 1 dataframe.
+
+## 5.1 Import and extract required columns
+
+The following code chunk performs 6 tasks:
+
+- Read the "data" sheet of all the COVID excel files in the aspatial folder    
+  - Although there are 2 excel sheets in each excel, the data that we require is only in the sheet named **data**
+- Remove duplicated columns except the last instance 
+  - This is to cater to both the duplicated columns: **ID_KEL** and **Meninggal** 
+  - The pattern noticed in the duplicated **Meninggal** columns is that the column with the non NA values are always in the last duplicated column. For example, if there are 2 **Meninggal** (Meninggal, Meninggal.1) where Meninggal comes before Meninggal.1, the non NA column is always in the second/last column Meninggal.1. 
+  - The pattern noticed for ID_KEL is that both its duplicated columns are always the same. Hence, we can choose to retain either one of them.  
+- Convert tibbles to dataframe
+- Extract the 7 required columns from COVID aspatial data:
+
+      1. ID_KEL, 
+      2. Nama_provinsi, 
+      3. nama_kota, 
+      4. nama_kecamatan 
+      5. nama_kelurahan, 
+      6. POSITIF (cumulative confirmed cases),
+      7. meninggal (cumulative death cases) from data worksheet of the daily COVID-19 data
+      
+- Extract and create Month and Year columns derived from file name
+- Drop rows where values in ID_KEL column are not digits
+  - Some examples of string values found in the ID_KEL column include: "LUAR DKI JAKARTA", "PROSES UPDATE DATA", "BELUM DIKETAHUI"
+
+```{r echo=TRUE, eval=FALSE}
+aps_path = "data/aspatial"
+
+filenames <- list.files(path = aps_path, pattern = "*.xlsx", full.names = T)
+
+aspatial <- lapply(filenames, function(i){
+    data <- which(readxl::excel_sheets(i) == "data") 
+    xl <- readxl::read_xlsx(i, sheet=data, .name_repair = "minimal")
+    non_dup <- xl[, !duplicated(colnames(xl), fromLast = TRUE)]
+    df <-data.frame(non_dup)
+    req_col_df <-  select(df, `ID_KEL`, `Nama_provinsi`, `nama_kota`, `nama_kecamatan`, `nama_kelurahan`, `POSITIF`, `Meninggal`)
+    full_date <- gsub(".*\\([0-9]{2} (.*)\\).*", "\\1", i)
+    month <- gsub('(^\\w+)\\s.+','\\1',full_date)
+    year <- gsub('^.*([0-9]{4}).*','\\1', full_date)
+    req_col_df$Month = toupper(month)
+    req_col_df$Year = strtoi(year)
+    req_col_df$MthYr <- paste(req_col_df$Month, req_col_df$Year, sep="_")
+    req_col_df <- req_col_df %>% filter(grepl("[[:digit:]]", ID_KEL))
+
+    return(req_col_df)
+
+})
+```
+
+## 6.2 Integrate the daily data into a data frame by month using *rbind.data.frame* 
+```{r echo=TRUE, eval=FALSE}
+covid_df <- do.call("rbind.data.frame", aspatial)
+```
+
+## 6.3 Save Aspatial file as RDS
+
+Before proceeding with our analysis, it is important to save our aspatial data as an RDS file so that we can **avoid**:
+
+- Reading multiple excel files and performing the same set of data transformation process everytime we run the rmd file
+- Uploading multiple excel files onto Github 
+  - Github has a maximum size limit of 100mb for individual files. 
+  - Although the current files do not exceed this limit, it is good practice to still save it as RDS file so that there won't be any complications when we eventually work with relatively large files. 
+  
+```{r echo=TRUE, eval=FALSE}
+covid_df_rds <- write_rds(covid_df, "data/aspatial/rds/covid_df.rds")
+```
+
+## 6.4 Read RDS Aspatial file
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+covid_df <- read_rds("data/aspatial/rds/covid_df.rds")
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+glimpse(covid_df)
+```
+:::
+:::::
+
+We can see that there are a total of **4,539 rows** in the COVID aspatial data.
+
+# 7. Integrate Aspatial and Geospatial data 
+
+## 7.1 Combine COVID aspatial data and DKI Jakarta geospatial frame into simple feature data frame using **left_join**
+
+**dkij_slice** will be used as the main table since the outer islands have already been excluded from it. 
+
+### 7.1.1 Choosing the join key
+
+Although there are multiple fields that can be mapped like
+  - KECAMATAN->nama_kecamatan, 
+  - DESA_KELUR->nama_kelurahan, 
+
+We will only be using **KODE_DESA** from dkij_slice and **ID_KEL** from covid_df to join since there are some discrepancies found with the other fields. Below are some examples of the discrepancies found: 
+
+- In KECAMATAN, there is a value "SETIABUDI" but in nama_kecamatan, the value is "SETIA BUDI".
+- In DESA_KELUR, there is a value "HALIM PERDANA KUSUMA" but in nama_kelurahan, the value is "HALIM PERDANA KUSUMAH" .
+
+The following code chunk helps us to see how we can observe these discrepancies in the columns: 
+
+#### 7.1.1.1 Discrepancies between **KECAMATAN** and **nama_kecamatan**
+```{r echo=TRUE, eval=TRUE}
+KECAMATAN <- unique(dkij_slice$KECAMATAN)
+nama_kecamatan <- unique(covid_df$nama_kecamatan)
+```
+
+- Values in KECAMATAN not found in nama_kecamatan: 
+
+```{r echo=TRUE, eval=TRUE}
+KECAMATAN[!(KECAMATAN %in% nama_kecamatan)]
+```
+
+- Values in nama_kecamatan not found in KECAMATAN: 
+
+```{r echo=TRUE, eval=TRUE}
+nama_kecamatan[!(nama_kecamatan %in% KECAMATAN)]
+```
+
+#### 7.1.1.2 Discrepancies between **DESA_KELUR** and **nama_kelurahan**
+```{r echo=TRUE, eval=TRUE}
+DESA_KELUR <- unique(dkij_slice$DESA_KELUR)
+nama_kelurahan <- unique(covid_df$nama_kelurahan)
+```
+
+- Values in DESA_KELUR not found in nama_kelurahan: 
+
+```{r echo=TRUE, eval=TRUE}
+DESA_KELUR[!(DESA_KELUR %in% nama_kelurahan)]
+```
+
+- Values in nama_kelurahan not found in DESA_KELUR: 
+
+```{r echo=TRUE, eval=TRUE}
+nama_kelurahan[!(nama_kelurahan %in% DESA_KELUR)]
+```
+
+### 7.1.2 Join geospatial and aspatial data using selected join key
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+dki_cov <- left_join(dkij_slice, covid_df, by = c('KODE_DESA' ='ID_KEL'))
+```
+:::
+::: {.panel}
+## Head {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+kable(head(dki_cov)) %>%
+  kable_styling("striped", full_width = F) %>%
+  scroll_box(width = "100%", height = "400px")
+```
+:::
+:::::
+
+## 7.2 Calculate cumulative confirmed cases rate (i.e. cases per 10000 population) and the cumulative death cases rate by month
+
+### 7.2.1 Check for any NA values in the df
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+colSums(is.na(dki_cov))
+```
+
+### 7.2.2 Set geometry to NULL first as we need to pivot our table for the calculation later 
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+dki_cov_wogeo <- st_set_geometry(dki_cov, NULL) 
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+glimpse(dki_cov_wogeo)
+```
+:::
+:::::
+
+### 7.2.3 Perform calculation for cumulative confirmed cases rate by month (POSITIF)
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cumu_cc_rate <- dki_cov_wogeo %>%
+  group_by(KODE_DESA, nama_kelurahan, MthYr, JUMLAH_PEN)  %>%
+  summarise(`TOTAL_CONFIRMED` = sum(`POSITIF`))  %>%
+  ungroup()  %>%
+  mutate(`cumu_cc_rate` = `TOTAL_CONFIRMED`/`JUMLAH_PEN`*10000)  %>%
+  select(`KODE_DESA`, `nama_kelurahan`, `JUMLAH_PEN`, `MthYr`, `cumu_cc_rate`) %>%
+  pivot_wider(names_from=MthYr, 
+              values_from=cumu_cc_rate)
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+glimpse(cumu_cc_rate)
+```
+:::
+:::::
+
+
+### 7.2.4 Perform calculation for cumulative death cases rate by month (Meninggal)
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+cumu_death_rate <- dki_cov_wogeo %>%
+  group_by(KODE_DESA, nama_kelurahan, MthYr, JUMLAH_PEN)  %>%
+  summarise(`TOTAL_DEATHS` = sum(`Meninggal`))  %>%
+  ungroup()  %>%
+  mutate(`cumu_death_rate` = `TOTAL_DEATHS`/`JUMLAH_PEN`*10000)  %>%
+  select(`KODE_DESA`, `nama_kelurahan`, `JUMLAH_PEN`, `MthYr`, `cumu_death_rate`) %>%
+  pivot_wider(names_from=MthYr, 
+              values_from=cumu_death_rate)
+```
+:::
+::: {.panel}
+## Glimpse {.panel-name}
+```{r  echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+glimpse(cumu_death_rate)
+```
+:::
+:::::
+
+here
+
+
+
