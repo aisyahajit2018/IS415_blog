@@ -338,6 +338,7 @@ summary(childcareSG_ppp)
 # First-order Spatial Point Patterns Analysis
 **In point pattern analysis, Spatial point data that you have must be the whole population, cannot be a sample**
 Describing the spatial pattern:
+
 - In order to confirm the observed pattern indeed show a cluster and not randomly distribute, need to perform statistical test.
 - That is why we need to perform SPA. 
 - SPA don't allow you to analyse the height of buildings since it is studying Euclidean space
@@ -351,6 +352,7 @@ Describing the spatial pattern:
   - Find out whether the spatial patterns that we observed is due to interaction effect between all the spatial points.
 
 For KDE, 
+
 - Certain crimes can be either sparse or localized. For eg, drugs distribution. In UK, common distribution places are either at nightclubs or illegal drugstores. So take this into consideration before choosing quartic and normal. 
 - in SG, parents tend to send their kids to kindergarten nearer to home or work locations.So this resembles quartic. 
 - For sec schools, parents tend to look for schools that are better. So people are willing travel slightly longer and this resembles Gaussian.
