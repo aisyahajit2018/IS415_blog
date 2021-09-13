@@ -1,0 +1,223 @@
+---
+title: "In-class Exercise 5"
+description: |
+  A short description of the post.
+author:
+  - name: Nor Aisyah
+    url: https://www.linkedin.com/in/nor-aisyah/
+date: 09-13-2021
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    toc_depth: 3
+---
+
+
+```{r setup, include=FALSE, eval=TRUE, echo=TRUE, message=FALSE, error=FALSE, fig.retina=3}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+To show your figure images in a higher resolution, fix the retina in the above code chunk above.
+
+# 1. Install and load R packages
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+packages = c('maptools', 'sf', 'raster', 'spatstat', 'tmap', 'tidyverse')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+    }
+  library(p,character.only = T)
+}
+```
+
+More on the packages used:
+
+- **Maptools** is for creating spatial* objects
+- **sf** is for importing geospatial data
+- **raster** is for creating a raster object
+- **spatstat** is for performing SPPA
+- **tmap** is for plotting thematic maps
+- **tidyverse** is for data handling
+
+# 2. Data used:
+
+- **MP14_SUBZONE_WEB_PL**: a polygon feature data in ESRI shapefile format from data.gov.sg, providing information of URA 2014 Master Plan Planning Subzone boundary data
+- **CHILDCARE**: a point feature data in rds format that provides both location and attribute information of childcare centres from data.gov.sg
+- **CHAS**: a point feature data in rds format that provides location and attribute information of CHAS clinics
+
+
+# 3. Import the Geospatial data
+
+- Importing shapefile using **st_read()** of **sf** package. The output object is in tibble sf object class.
+
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+mpsz_sf <- st_read(dsn = "data/shapefile", layer = "MP14_SUBZONE_WEB_PL")
+```
+
+We can see from the results above that mpsz_sf projection is in SVY21. 
+
+# 4. Import aspatial data from rds folder
+
+- **read_rds()** of **readr** package is used instead of **readRDS()** of base R is used. This is because the output of **read_rds()** is in tibble object.
+
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+CHAS <- read_rds("data/rds/CHAS.rds")
+childcare <- read_rds("data/rds/childcare.rds")
+```
+
+Note: There are some data issue in the childcare data frame because `Lat` and `Lng` should be in numeric data type. The coordinate fields are in decimal degrees. Hence, wgs referencing system is assumed. 
+
+# 5. Convert aspatial data frame into sf objects
+
+## 5.1 CHAS conversion to sf object
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+CHAS_sf <- st_as_sf(CHAS,
+                    coords = c("X_COORDINATE",
+                               "Y_COORDINATE"),
+                    crs=3414)
+```
+
+Note: st_as_sf accepts the coordinates in character data type.  
+
+## 5.2 Childcare conversion to sf object
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+childcare_sf <- st_as_sf(CHAS,
+                    coords = c("Lng",
+                               "Lat"),
+                    crs=4326) %>%
+  st_transform(crs=3414)
+```
+
+Note: In childcare we have Lng and Lat as the coordinates where they are both in demical degrees. The coordinate system for that is WGS84, crs code 4326. We then use **st_transform** to change the coordinates of a geometry from one spatial reference system to another. 
+
+# 6. Plot to review
+
+Notes for arguments: 
+- alpha is to set transparency
+- col is to set the colour of the dots
+- size is to set the size of the dots
+
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+tmap_mode('view')
+tm_shape(childcare_sf) +
+  tm_dots(alpha=0.4,
+          col="blue",
+          size=0.05) +
+tm_shape(CHAS_sf) +
+  tm_dots(alpha=0.4,
+          col="red",
+          size=0.05)
+
+tmap_mode('plot')
+```
+
+Note:
+
+- Darker blue points show that you have more than 1 childcare centers
+- With the interactive mode, you can:
+  - Zoom in and out to examine the data 
+  - Switch views to see the context like which neighbourhood they are in etc.
+    - GrayCanvas to see the distribution
+    - OpenStreetMap to see the local context
+
+# 7. Geospatial Data Wrangling
+
+## 7.1 Converting from sf to Spatial* dataframe 
+
+- Here we are using using **as_Spatial** of sf package 
+- The asterisk in Spatial* is to say that we have more than 1 Spatial objects
+
+```{r}
+childcare <- as_Spatial(childcare_sf)
+CHAS <- as_Spatial(CHAS_sf)
+mpsz <- as_Spatial(mpsz_sf)
+```
+
+Notes: 
+
+- The Spatial objects will consist of data table which doesn't contain the geometry object
+- bbox is showing the extent of coordinates
+- proj4string contains the projection of the map data
+- The difference between mpsz and the other 2 childcare and CHAS is that only mpsz has the additional polygons data since the other 2 are point feature data.
+
+
+## 7.2 Converting from Spatial* dataframe into Spatial* objects (sp format)
+
+- Here we are using as.SpatialPoint() of as.SpatialPolygon() of maptools package
+- maptools is only capable of converting from one Spatial object to another Spatial object. That is why we performed the above step in 7.1. 
+
+```{r}
+childcare_sp <- as(childcare, "SpatialPoints")
+CHAS_sp <- as(CHAS,"SpatialPoints")
+mpsz_sp <- as(mpsz,"SpatialPolygons")
+```
+
+Note: After performing the above, the difference that we can see in childcare and childcare_sp is that the dataframe disappears. Similarly for CHAS and mpsz.
+
+## 7.3 Converting from Spatial* objects into spatstat ppp format
+
+Here we are using as.ppp() of maptools package.
+
+```{r}
+childcare_ppp <- as(childcare_sp, "ppp")
+CHAS_ppp <- as(CHAS_sp, "ppp")
+```
+    
+Note: 
+
+- Difference between childcare_sp and childcare_ppp is that the projections and bbox are no longer there. 
+- There is also a data called window here which we can use to see our study area. Later on, we can define the study area for our owin object.
+
+## 7.4 Remove duplicates points using **jitter** of spatstat package
+
+- In hands on exercise 4, there were 3 ways to remove duplicates. Jitter is just one of the ways. 
+
+### 7.4.1 Remove duplicates points in childcare
+```{r}
+childcare_ppp_jit <- rjitter(childcare_ppp, 
+                             retry=TRUE,
+                             nsim=1, 
+                             drop = TRUE)
+any(duplicated(childcare_ppp_jit))
+```
+
+The above results shows that there are no duplicates. 
+
+### 7.4.2 Remove duplicates points in CHAS
+```{r}
+CHAS_ppp_jit <- rjitter(CHAS_ppp, 
+                             retry=TRUE,
+                             nsim=1, 
+                             drop = TRUE)
+any(duplicated(CHAS_ppp_jit))
+```
+
+Similarly, for CHAS, the above results shows that there are no duplicates. 
+
+## 7.5 Extract Punggol Planning Area 
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+pg <- mpsz[mpsz@data$PLN_AREA_N=="PUNGGOL",]
+```
+
+Note:
+
+- When working with polygon dataframe, you can slowly type out the code above to see the fields, pausing at **$** sign.
+- **IMPORTANT**: The full syntax should have the **,** at the back! If you don't have **,** it will not work.
+- From the above results, we can see that we only have one object class and all of it is belonging to PUNGGOl area.
+
+## 7.6 Convert SpatialPolygonDataFrame into SpatialPolygons object
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+pg_sp <- as(pg, "SpatialPolygons")
+```
+
+## 7.7 Convert SpatialPolygons into owin object
+```{r  eval=TRUE, echo=TRUE, message=FALSE, error=FALSE}
+pg_owin <- as(pg_sp, "owin")
+```
+
+
+
+
+
+

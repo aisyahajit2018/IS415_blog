@@ -290,6 +290,7 @@ tmap_mode('plot')
 
 ### 3.4.5 Overcome duplicates problem
 3 ways:
+
 - 1. **Delete** the duplicates (result in loss of useful point events)
 - 2. Use **jittering** approach: Add a small perturbation to the duplicate points so that they do not occupy the exact same space
 - 3. Make each point **unique** and then attach the duplicates of the points to the patterns as marks, as attributes of the points

@@ -159,20 +159,20 @@ summary(CHAS_ppp)
 ```
 
 ```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
-# tmap_mode('view')
-# tm_shape(childcare_sf)+
-#   tm_dots(alpha=0.4,
-#           col="blue",
-#           size="0.05")+
-# tm_shape(CHAS_sf)+
-#   tm_dots(alpha=0.4,
-#           col="red",
-#           size="0.05")
+tmap_mode('view')
+tm_shape(childcare_sf) +
+  tm_dots(alpha=0.4,
+          col="blue",
+          size=0.05) +
+tm_shape(CHAS_sf) +
+  tm_dots(alpha=0.4,
+          col="red",
+          size=0.05)
 ```
 
 
 Here we are switching back to plot mode:
 
 ```{r echo=TRUE, eval=TRUE}
-# tmap_mode('plot')
+tmap_mode('plot')
 ```
