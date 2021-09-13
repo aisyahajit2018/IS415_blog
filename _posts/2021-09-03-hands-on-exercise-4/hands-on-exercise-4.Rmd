@@ -708,7 +708,8 @@ plot(G_CK, xlim=c(0,500))
 - H1= The distribution of childcare services at Choa Chu Kang are not randomly distributed.
 - The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
 
-** Monte Carlo
+** Monte Carlo**
+
 - rely on repeated random sampling to obtain numerical results
 - use randomness to solve problems that might be deterministic in principle
 - probability of different outcomes in a process that cannot easily be predicted due to the intervention of random variables
