@@ -112,7 +112,7 @@ str(wm_q)
 ```
 
 
-# 4.2 Computing (ROOK) contiguity based neighbours
+## 4.2 Computing (ROOK) contiguity based neighbours
 
 - Note: See that we set the queen argument to FALSE
 
