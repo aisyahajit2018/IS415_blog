@@ -1563,7 +1563,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <h1 id="installing-and-loading-the-r-packages">2. Installing and Loading the R packages</h1>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>packages</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'sf'</span>, <span class='st'>'spdep'</span>, <span class='st'>'tmap'</span>, <span class='st'>'tidyverse'</span><span class='op'>)</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>packages</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'sf'</span>, <span class='st'>'readr'</span>, <span class='st'>'spdep'</span>, <span class='st'>'tmap'</span>, <span class='st'>'tidyverse'</span><span class='op'>)</span>
 <span class='kw'>for</span> <span class='op'>(</span><span class='va'>p</span> <span class='kw'>in</span> <span class='va'>packages</span><span class='op'>)</span><span class='op'>{</span>
   <span class='kw'>if</span><span class='op'>(</span><span class='op'>!</span><span class='kw'><a href='https://rdrr.io/r/base/library.html'>require</a></span><span class='op'>(</span><span class='va'>p</span>, character.only <span class='op'>=</span> <span class='cn'>T</span><span class='op'>)</span><span class='op'>)</span><span class='op'>{</span>
     <span class='fu'><a href='https://rdrr.io/r/utils/install.packages.html'>install.packages</a></span><span class='op'>(</span><span class='va'>p</span><span class='op'>)</span>
@@ -1573,6 +1573,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </code></pre>
 </div>
 </div>
+<p>More on the packages notes:</p>
+<p>-import geospatial data using appropriate function(s) of <strong>sf</strong> package, - import csv file using appropriate function of <strong>readr</strong> package, perform relational join using appropriate join function of <strong>dplyr</strong> package, - compute spatial weights using appropriate functions of <strong>spdep</strong> package, and - calculate spatially lagged variables using appropriate functions of <strong>spdep</strong> package</p>
 <h1 id="import-data">3. Import data</h1>
 <h2 id="import-shapefile-into-r-environment">3.1 Import shapefile into r environment</h2>
 <div class="layout-chunk" data-layout="l-body">
@@ -1620,8 +1622,9 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 <h1 id="computing-contiguity-spatial-weights">4. Computing Contiguity Spatial Weights</h1>
 <ul>
-<li>Use <strong>poly2nb() of spdep</strong> package to compute <strong>contiguity weight matrices</strong> for the study area.</li>
-<li>This function <strong>builds a neighbours list</strong> based on regions with contiguous boundaries.</li>
+<li><p>Use <strong>poly2nb() of spdep</strong> package to compute <strong>contiguity weight matrices</strong> for the study area.</p></li>
+<li><p>poly2nb(): Construct neighbours list from polygon list</p></li>
+<li><p>This function <strong>builds a neighbours list</strong> based on regions with contiguous boundaries.</p></li>
 </ul>
 <h2 id="computing-queen-contiguity-based-neighbours">4.1 Computing (QUEEN) contiguity based neighbours</h2>
 <p>NOTE:</p>
@@ -2848,6 +2851,9 @@ Non-symmetric neighbours list</code></pre>
 [1] 1 1 1 1 1 1</code></pre>
 </div>
 <h3 id="use-nb2listw-and-glist-to-explicitly-assign-weight-values.">5.2.4 Use <strong>nb2listw() and glist()</strong> to explicitly assign weight values.</h3>
+<ul>
+<li>nb2listw(): Spatial weights for neighbours lists</li>
+</ul>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>wm_knn6</span> <span class='op'>&lt;-</span> <span class='fu'>nb2listw</span><span class='op'>(</span><span class='va'>knn6a</span>, glist <span class='op'>=</span> <span class='va'>binary.knn6</span>, style <span class='op'>=</span> <span class='st'>"B"</span><span class='op'>)</span>

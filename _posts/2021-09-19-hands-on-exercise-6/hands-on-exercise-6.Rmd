@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # 2. Installing and Loading the R packages
 ```{r eval=TRUE, echo = TRUE}
-packages = c('sf', 'spdep', 'tmap', 'tidyverse')
+packages = c('sf', 'readr', 'spdep', 'tmap', 'tidyverse')
 for (p in packages){
   if(!require(p, character.only = T)){
     install.packages(p)
@@ -33,6 +33,14 @@ for (p in packages){
   library(p,character.only = T)
 }
 ```
+
+More on the packages notes:
+
+-import geospatial data using appropriate function(s) of **sf** package,
+- import csv file using appropriate function of **readr** package,
+perform relational join using appropriate join function of **dplyr** package,
+- compute spatial weights using appropriate functions of **spdep** package, and
+- calculate spatially lagged variables using appropriate functions of **spdep** package
 
 # 3. Import data
 ## 3.1 Import shapefile into r environment
@@ -65,6 +73,9 @@ qtm(hunan, "GDPPC")
 # 4. Computing Contiguity Spatial Weights
 
 - Use **poly2nb() of spdep** package to compute **contiguity weight matrices** for the study area.
+
+- poly2nb(): Construct neighbours list from polygon list
+
 - This function **builds a neighbours list** based on regions with contiguous boundaries.
 
 ## 4.1 Computing (QUEEN) contiguity based neighbours
@@ -412,6 +423,9 @@ binary.knn6[1]
 ```
 
 ### 5.2.4 Use **nb2listw() and glist()** to explicitly assign weight values.
+
+- nb2listw(): Spatial weights for neighbours lists
+
 ```{r eval=TRUE, echo = TRUE}
 wm_knn6 <- nb2listw(knn6a, glist = binary.knn6, style = "B")
 ```
@@ -447,5 +461,6 @@ gdppc <- qtm(hunan, "GDPPC")
 lag_sum_gdppc <- qtm(hunan, "lag_sum GDPPC")
 tmap_arrange(gdppc, lag_sum_gdppc, asp=1, ncol=2)
 ```
- **NOTE**: For more effective comparison, it is advisable to use the core tmap mapping functions.
+
+**NOTE**: For more effective comparison, it is advisable to use the core tmap mapping functions.
 
