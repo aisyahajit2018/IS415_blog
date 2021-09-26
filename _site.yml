@@ -21,12 +21,17 @@ navbar:
           href: https://aisyahajit2018-is415.netlify.app/posts/2021-08-29-hands-on-exercise-3/
         - text: "Hands-on Exercise 4"
           href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-03-hands-on-exercise-4/
-        - text: "Hands-on Exercise 5"
+        - text: "Hands-on Exercise 5a"
           href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-12-hands-on-exercise-5/
+        - text: "Hands-on Exercise 5b"
+          href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-26-hands-on-exercise-5b/
         - text: "Hands-on Exercise 6"
           href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-19-hands-on-exercise-6/
         - text: "Hands-on Exercise 7"
+          href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-26-hands-on-exercise-7/
+        - text: "Hands-on Exercise 8"
           href: 
+          
     - text: "In-class Exercise"
       menu:
         - text: "In-class Exercise 2"
@@ -40,6 +45,8 @@ navbar:
         - text: "In-class Exercise 6"
           href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-20-in-class-exercise-6/
         - text: "In-class Exercise 7"
+          href: 
+        - text: "In-class Exercise 8"
           href: 
           
     - text: "Home"
