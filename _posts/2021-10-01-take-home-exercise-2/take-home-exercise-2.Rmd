@@ -539,7 +539,7 @@ tm_shape(tourism_sf) +
   tm_dots(col ="purple",  size = 0.02) +
   
 tm_layout(title= 'Map of Airbnb 2019 listings with other location factors',
-          title.position = c('right', 'top'))
+          title.position = c('right', 'bottom'))
 ```
 
 ### 5.5.2 Plot map without abb_jun19
@@ -561,6 +561,1465 @@ tm_shape(tourism_sf) +
   tm_dots(col ="purple",  size = 0.02) +
   
 tm_layout(title= 'Map of Airbnb 2021 listings with other location factors',
-          title.position = c('right', 'top'))
+          title.position = c('right', 'bottom'))
 ```
+
+
+
+# 6. Spatial Data Wrangling
+
+In this section, we will be converting our simple feature data frames to ppp objects for our analysis later.
+
+## 6.1 Convert from sf dataframes to sp's Spatial* Classes
+
+- The first step is to convert from sf dataframes to sp's Spatial* Classes using **as_Spatial()** of **sf**.
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun19 <- as_Spatial(abb_jun19_sf)
+abb_jun21 <- as_Spatial(abb_jun21_sf)
+hotels <- as_Spatial(hotels_sf)
+tourism <- as_Spatial(tourism_sf)
+sg <- as_Spatial(sg_sf)
+mpsz <- as_Spatial(mpsz_sf)
+mrtlrt <- as_Spatial(mrtlrt_sf)
+```
+
+## 6.2 Convert from Spatial* class to generic sp format
+
+- The **spatstat** package requires the analytical data in **ppp** object form 
+- As there is no direct way to convert a Spatial* class to ppp object, we have to convert the **Spatial classes*** into **Spatial** object first.
+- The function **as()** here will force an object to belong to a class. 
+- Here, we will use different arguments like SpatialPoints and SpatialPolysons for the given input Class. 
+- Note: After this step, the Data dataframe will be dropped.
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun19_sp <- as(abb_jun19, "SpatialPoints")
+abb_jun21_sp <- as(abb_jun21, "SpatialPoints")
+hotels_sp <- as(hotels, "SpatialPoints")
+tourism_sp <- as(tourism, "SpatialPoints")
+mrtlrt_sp <- as(mrtlrt, "SpatialPoints")
+sg_sp <- as(sg, "SpatialPolygons")
+mpsz_sp <- as(mpsz, "SpatialPolygons")
+```
+
+## 6.3 Convert from sp to spatstat ppp format
+- Now, we will use the **as()** function again but with **"ppp"** as the argument for Class to convert the spatial data into spatstat’s ppp object format
+- Note: 
+  - In ppp objects, the projection information and bbox no longer exist.
+  - There is also a data called window in the ppp object which we can use to see our study area. 
+  - Later on, we will need to define the study area for our owin object.
+  
+```{r echo=TRUE, eval=TRUE}
+abb_jun19_ppp <- as(abb_jun19_sp, "ppp")
+abb_jun21_ppp <- as(abb_jun21_sp, "ppp")
+hotels_ppp <- as(hotels_sp, "ppp")
+tourism_ppp <- as(tourism_sp, "ppp")
+mrtlrt_ppp <- as(mrtlrt_sp, "ppp")
+```
+
+## 6.4 Summary statistics of newly created ppp objects
+- Here, we can take a quick look at the summary statistics of the newly created ppp object by using the code chunk below.
+
+::::: {.panelset}
+::: {.panel}
+## abb_jun19_ppp summary {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+summary(abb_jun19_ppp)
+```
+:::
+::: {.panel}
+## abb_jun21_ppp summary {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+summary(abb_jun21_ppp)
+```
+:::
+::: {.panel}
+## hotels_ppp summary {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+summary(hotels_ppp)
+```
+:::
+::: {.panel}
+## tourism_ppp summary {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+summary(tourism_ppp)
+```
+:::
+::: {.panel}
+## mrtlrt_ppp summary {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+summary(mrtlrt_ppp)
+```
+:::
+::::: 
+
+From the results above:
+
+- We can see that there are some warning message about duplicates. The ppp objects that contains duplicates are:
+    - Airbnb Jun 2019 listings, 
+    - Airbnb Jun 2021 listings,
+    - hotels 
+    - tourism
+- In spatial point patterns analysis an issue of significant is the presence of duplicates. 
+- The statistical methodology used for spatial point patterns processes is based largely on the assumption that process are simple, that is, that the points cannot be coincident.
+
+## 6.4 Handling duplicates 
+### 6.4.1 Check for number of duplicated points
+- The function **multiplicity()** helps us count the number of duplicates for each point in a spatial point pattern.
+- If we want to know how many locations have more than one point event, we can use the code chunk below:
+
+```{r echo=TRUE, eval=TRUE}
+sum(multiplicity(abb_jun19_ppp) > 1)
+sum(multiplicity(abb_jun21_ppp) > 1)
+sum(multiplicity(hotels_ppp) > 1)
+sum(multiplicity(tourism_ppp) > 1)
+sum(multiplicity(mrtlrt_ppp) > 1)
+```
+
+### 6.4.2 Handling duplicates with jittering
+- Out of the 3 known ways to overcome duplicates, we will use the jittering approach. 
+- This approach will add a small perturbation to the duplicate points so that they do not occupy the exact same space.
+- The code chunk below implements the jittering approach.
+  - **rjitter()** of **spatstat** package is used 
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun19_ppp_jit <- rjitter(abb_jun19_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+abb_jun21_ppp_jit <- rjitter(abb_jun21_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+hotels_ppp_jit <- rjitter(hotels_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+tourism_ppp_jit <- rjitter(tourism_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+```
+
+### 6.4.3 Check if duplicates still exist
+- Here, instead of checking the summary, we can use the functions **any()** and **duplicated()** to ensure that there are no duplicated points after the jittering approach
+- If the function returns FALSE, it will help us confirm that there are indeed no duplicated points present.
+
+```{r echo=TRUE, eval=TRUE}
+any(duplicated(abb_jun19_ppp_jit))
+any(duplicated(abb_jun21_ppp_jit))
+any(duplicated(hotels_ppp_jit))
+any(duplicated(tourism_ppp_jit))
+```     
+
+From the above results, we can confirm that there are no longer duplicates after performing the jittering approach.
+
+## 6.5 Create owin objects
+
+- When analysing spatial point patterns, it is a good practice to confine the spatial point patterns analysis with a geographical area such as the Singapore boundary.
+- The presence of water catchment areas may skew the calculations, so we need to limit by planning subzone area later on.
+- In **spatstat** package, this polygonal region is known as **owin**, an object specially designed to represent this polygonal region.
+- We can create this object by converting sg SpatialPolygon object into owin object of spatstat
+- The ouput object can be displayed by using plot() function
+
+```{r echo=TRUE, eval=TRUE}
+sg_owin <- as(sg_sp, "owin")
+plot(sg_owin)
+``` 
+
+## 6.6 Combine point events object and owin object
+The code chunk below combines the point objects of abb_jun19, abb_jun21, hotels, tourism and mrtlrt with the owin object into one ppp object class.
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun19SG_ppp = abb_jun19_ppp_jit[sg_owin]
+abb_jun21SG_ppp = abb_jun21_ppp_jit[sg_owin]
+hotelsSG_ppp = hotels_ppp_jit[sg_owin]
+tourismSG_ppp = tourism_ppp_jit[sg_owin]
+mrtlrtSG_ppp = mrtlrt_ppp[sg_owin]
+```
+
+### 6.6.1 Plot ppp object within Singapore boundary
+The code chunk below plots the ppp object class using plot function of base R package.
+
+```{r echo=TRUE, eval=TRUE, fig.width=8, fig.height=12}
+par(mfrow=c(3,2), mar=c(1,1,1,1))
+plot(abb_jun19SG_ppp)
+plot(abb_jun21SG_ppp)
+plot(hotelsSG_ppp)
+plot(tourismSG_ppp)
+plot(mrtlrtSG_ppp)
+```
+
+## 6.7 Rescale to kilometers
+
+- As we will be computing the kernel density estimation (KDE) later on, we need to convert our point pattern data into kilometres to be able to obtain any valuable insights. 
+- The default unit of measurement of SVY21 is in metres. 
+- Hence, we will use **rescale()** of **spatstat** package which helps to converts a point pattern dataset to another unit of length.
+- The arguments for the **rescale(X, s, unitname)** function are:
+  - X: our point pattern data (e.g. abb_jun19SG_ppp, hotelsSG_ppp)
+  - s: the new unit 
+  - unitname: the name of new unit (e.g. inches or in this case, we specifically using km)
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun19SG_ppp.km <- rescale(abb_jun19SG_ppp, 1000, "km")
+abb_jun21SG_ppp.km <- rescale(abb_jun21SG_ppp, 1000, "km")
+hotelsSG_ppp.km <- rescale(hotelsSG_ppp, 1000, "km")
+tourismSG_ppp.km <- rescale(tourismSG_ppp, 1000, "km")
+mrtlrtSG_ppp.km <- rescale(mrtlrtSG_ppp, 1000, "km")
+```
+
+
+
+# 7. Section A: Airbnb Distribution in 2019 
+This section aims to investigate if the distribution of Airbnb listings at June 2019 are affected by location factors such as near to existing hotels, MRT services and tourist attractions. For our investigation, this section will consist of 2 parts:
+
+1. Exploratory Spatial Data Analysis
+- Where we will need to derive the Kernel Density Estimation maps with the objective of understanding and potentially predicting event patterns 
+
+2. Second-Order Spatial Point Patterns Analysis 
+
+- Where we perform this analysis to understand when data points start to form clusters or when data points have spatial patterns that are statistically significant.
+
+
+## 7.1 Exploratory Spatial Data Analysis
+### 7.1.1 KDE maps
+- **density()** of **spatstat** package is used to plot the re-scaled data set and plot the KDE map
+- The arguments of this function includes:
+  - Bandwidth Selection
+    - sigma=bw.diggle helps to compute automatically. 
+    - Other possible methods are “bw.CvL()”, etc. They are standalone functions, so we can extract them by calling this function externally with the appropriate arguments.
+  - Kernel Type - the smoothing method. 
+    - Instead of **Gaussian**, there are also other methods like: Epanechnikov, Quartic and Dic. For this analysis, there are 2 methods that can be applied.
+      - **People tend to rent an Airbnb when it is nearer to the transportation services and tourist attractions. Hence, this resembles Quartic**. 
+      - **People also tend to rent an Airbnb that are better in terms of price, past reviews and other factors. Hence, they are willing to book an Airbnb that are slightly further from places of interest. This would resemble Gaussian**.
+      - Based on the above explanations, I would be using **Quartic** for this analysis since it is more relevant.
+  - Edge : Refers to the intensity estimate corrected for edge effect bias, the default is FALSE
+  
+
+#### 7.1.1.1 Explore different bandwidth methods 
+
+To define the bandwidth of the density estimation, we can explore the different bandwidth methods such as:
+
+  - bw.diggle(), bw.ppl(), bw.scott() and bw.CvL.
+  - To help us determine and select the appropriate bandwidth, I have created a function to run these 4 bandwidth methods easily for all our ppp objects.
+  - The function below performs 3 steps:
+    - With the inputted ppp object, run the 4 different automatic bandwidth methods 
+    - Add the output and respective bandwidth names to a list
+    - Print the output list
+
+```{r echo=TRUE, eval=TRUE}
+bw_methods <- function(data) {
+  cvl <- bw.CvL(data)
+  scott <- bw.scott(data)
+  ppl <- bw.ppl(data)
+  diggle <- bw.diggle(data)
+  output <- list(cvl, scott, ppl, diggle)
+  names(output) <- c("CvL", "scott", "ppl", "diggle")
+  print(output)
+}
+```
+
+::::: {.panelset}
+::: {.panel}
+## abb_jun19 bw {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+bw_methods(abb_jun19SG_ppp.km)
+```
+:::
+::: {.panel}
+## hotels bw {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+bw_methods(hotelsSG_ppp.km)
+```
+:::
+::: {.panel}
+## tourism bw {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+bw_methods(tourismSG_ppp.km)
+```
+:::
+::: {.panel}
+## mrtlrt bw {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+bw_methods(mrtlrtSG_ppp.km)
+```
+:::
+::::: 
+
+
+Based on the above results:
+
+- For all of the spatial points, the **bw.diggle()** automatic bandwidth method gives us a *narrower* bandwith. 
+- With further research, Baddeley et (2016) suggested using bw.ppl() algorithm because in their experience, it tends to produce more appropriate values when the **pattern consists predominantly of tight clusters**. 
+- However, Baddeley et also mentioned that if we want to detect a **single tight cluster in the midst of random noise**, then the bw.diggle() method seems to work best. 
+
+First, we have to understand what is the meaning of **tight clusters**
+
+- According to a [study](https://openproceedings.org/2019/conf/edbt/EDBT19_paper_115.pdf), data points in a tight cluster are close to each other. Therefore, they tend to share the same kernel centers and have similar local densities.
+- Based on our previous plots, it is observed that all of our spatial points (Airbnb 2019, Hotels and Tourism, MrtLrt) have significant clusters in the Central region. 
+- Hence, we will plot the kde map using **bw.diggle()** automatic bandwidth method.
+
+#### 7.1.1.2 Plot KDE Maps of Airbnb 2019 listings, hotels, MRT services, and tourist attractions
+
+- The following code chunk will help us to plot 2 maps (KDE with bw.diggle() and Point Map) for each of our spatial point datasets for a clearer view.
+
+```{r echo=TRUE, eval=TRUE}
+kde_diggle <- function(data) {
+  par(mfrow=c(1,2), mar=c(1,1,1,1))
+  plot(density(data, sigma=bw.diggle, edge=TRUE, kernel="quartic"), main = "bw.diggle")
+  plot(data, main = "Point map")
+}
+```
+
+##### 7.1.1.2.1 Airbnb June 2019 listings
+```{r echo=TRUE, eval=TRUE, fig.width=12, warning=FALSE}
+
+kde_diggle(abb_jun19SG_ppp.km)
+```
+##### 7.1.1.2.2 Hotels
+```{r echo=TRUE, eval=TRUE, fig.width=12, warning=FALSE}
+kde_diggle(hotelsSG_ppp.km)
+```
+
+##### 7.1.1.2.3 Tourism
+```{r echo=TRUE, eval=TRUE, fig.width=12, warning=FALSE}
+kde_diggle(tourismSG_ppp.km)
+```
+
+##### 7.1.1.2.4 MrtLrt
+```{r echo=TRUE, eval=TRUE, fig.width=10, warning=FALSE}
+kde_diggle(mrtlrtSG_ppp.km)
+```
+
+From the above maps, 
+
+- We can see that the South-east area of the Central region have higher density of Airbnb listings in 2019, indicated by the pink-orange spots on the KDE map. 
+- Similarly, for Hotels and Tourism, the South-east area of the Central region have higher density of Airbnb listings in 2019, indicated by the pink-orange spots on the KDE map. 
+- For MrtLrt, there are higher density areas are found in the Central, North and North-east region indicated by the brighter orange-yellow spots. 
+- Although there are black patches on the point map, it is better and wiser for us to use the KDE map since it has different colour scales to represent the density of the supposed cluster. 
+- The darker the purple shade, the less dense it is while the lighter the orange to yellow shade, the more dense the area.
+- From the legend as well, we can see clearly that there are about 4 colours (Purple, Pink, Orange and Yellow) that we can identify and use to describe the level of density.
+- However, with the point map, it is difficult for us to say which area is denser than the other area due to the single black colour used.
+
+
+### 7.1.2 Display kernel density maps on openstreetmap of Singapore
+#### 7.1.2.1 Compute KDE maps with metres 
+- In this section, we do not have to rescale our point pattern into kilometres before computing our values as OpenStreetMap’s default units are in metres.
+- Also, we are using bw.diggle as our bandwidth method.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE}
+kde_abb_jun19SG_ppp.m <- density(abb_jun19SG_ppp, sigma=bw.diggle, edge=TRUE,kernel="quartic") 
+kde_hotelsSG_ppp.m <- density(hotelsSG_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+kde_tourismSG_ppp.m <- density(tourismSG_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+kde_mrtlrtSG_ppp.m <- density(mrtlrtSG_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+```
+
+#### 7.1.2.2 Convert KDE output into grid objects
+- The result will be the same but, we just convert it so that it is suitable for mapping purposes.
+- The following code chunk uses **as.SpatialGridDataFrame.im()** to convert KDE output into grid objects.
+
+```{r echo=TRUE, eval=TRUE}
+gridded_kde_abb_jun19SG_dg <- as.SpatialGridDataFrame.im(kde_abb_jun19SG_ppp.m)
+gridded_kde_hotels_dg <- as.SpatialGridDataFrame.im(kde_hotelsSG_ppp.m)
+gridded_kde_tourism_dg <- as.SpatialGridDataFrame.im(kde_tourismSG_ppp.m)
+gridded_kde_mrtlrt_dg <- as.SpatialGridDataFrame.im(kde_mrtlrtSG_ppp.m)
+```
+
+#### 7.1.2.3 Convert gridded output into raster
+- The following code chunk uses *raster()* of **raster** package to convert the gridded KDE objects to RasterLayer object. 
+
+```{r echo=TRUE, eval=TRUE}
+kde_abb_jun19SG_dg_raster <- raster(gridded_kde_abb_jun19SG_dg)
+kde_abb_jun19SG_dg_raster
+
+kde_hotels_dg_raster <- raster(gridded_kde_hotels_dg)
+kde_hotels_dg_raster
+
+kde_tourism_dg_raster <- raster(gridded_kde_tourism_dg)
+kde_tourism_dg_raster
+
+kde_mrtlrt_dg_raster <- raster(gridded_kde_mrtlrt_dg)
+kde_mrtlrt_dg_raster
+
+```
+
+From the results above: 
+
+- The CRS for all Raster objects are NA. We will need to assign the relevant projection systems before plotting a map with it. 
+
+#### 7.1.2.4 Assign projection systems
+
+- The following code chunk assigns the EPSG code of 3414 to the Raster objects
+
+```{r echo=TRUE, eval=TRUE}
+projection(kde_abb_jun19SG_dg_raster) <- CRS("+init=EPSG:3414")
+kde_abb_jun19SG_dg_raster
+projection(kde_hotels_dg_raster) <- CRS("+init=EPSG:3414")
+kde_hotels_dg_raster
+projection(kde_tourism_dg_raster) <- CRS("+init=EPSG:3414")
+kde_tourism_dg_raster
+projection(kde_mrtlrt_dg_raster) <- CRS("+init=EPSG:3414")
+kde_mrtlrt_dg_raster
+```
+
+We can see from the results above that the CRS for all Raster objects are assigned the relevant projection systems.
+
+
+#### 7.1.2.5 Visualise KDE Raster objects in OpenStreetMap
+- To help facilitate the plotting of the various OpenStreetMaps for investigation, we will create a function.
+- The function will allow us to plot the Airbnb 2019 listing with the other location factors to see if there are any insights that we can get out of the comparison.
+- The function makes use of the **tmap** package to display the raster object in OpenStreetMap of Singapore.
+- We also make use of **tm_basemap()** to specify the visualization to be in OpenStreetMap
+- Note, we should avoid using contrasting colours like Blues and Purples in the same map as it would be harder to tell the data apart.
+
+```{r echo=TRUE, eval=TRUE}
+plot_oms <- function(raster1, raster2, rt_legend1, rt_legend2) {
+  tmap_mode('view')
+  tm_basemap("OpenStreetMap")+
+    tm_shape(raster1) +
+      tm_raster("v", title = rt_legend1, alpha= 0.7,  palette = "Reds" ) +
+    tm_shape(raster2) + 
+      tm_raster("v", title = rt_legend2, alpha= 0.7, palette = "Blues")
+  
+}
+```
+
+
+###### 7.1.2.5.1 Plot Airbnb Jun2019 with Hotels
+```{r echo=TRUE, eval=TRUE}
+plot_oms(kde_hotels_dg_raster, kde_abb_jun19SG_dg_raster, "Hotels", "Airbnb Jun2019")
+tmap_mode('plot')
+```
+
+**Spatial patterns observations**:
+
+- Airbnb 2019 listings are represented in Blue shades while Hotels are represented in shades of Reds.
+- Similar to our previous observations from the KDE maps, for Hotels, there are higher density areas are found in the Central region.
+- We can also see that the Airbnb listings here are cluttered in this Central region, indicated by the darker blue shade. 
+
+###### 7.1.2.5.2 Plot Airbnb Jun2019 with Tourism
+```{r echo=TRUE, eval=TRUE}
+plot_oms(kde_tourism_dg_raster, kde_abb_jun19SG_dg_raster, "Tourism", "Airbnb Jun2019")
+tmap_mode('plot')
+```
+
+
+**Spatial patterns observations**:
+
+- Airbnb 2019 listings are represented in Blue shades while Tourism are represented in shades of Reds.
+- Similar to our previous observations from the KDE maps, for Tourism, there are higher density areas are found in the Central region.
+- We can also see that the Airbnb listings here are cluttered in this Central region, indicated by the darker blue shade. 
+
+###### 7.1.2.5.3 Plot Airbnb Jun2019 with MrtLrt
+```{r echo=TRUE, eval=TRUE}
+plot_oms(kde_mrtlrt_dg_raster, kde_abb_jun19SG_dg_raster, "MrtLrt", "Airbnb Jun2019")
+tmap_mode('plot')
+```
+
+
+**Spatial patterns observations**: 
+
+- Airbnb 2019 listings are represented in Blue shades while MrtLrt are represented in shades of Reds.
+- Similar to our previous observations from the KDE maps, for MrtLrt, there are higher density areas are found in the Central, North-east and North-west region.
+- Out of the 3 most obvious clusters in the Central, Northeast and Northwest areas, the Central region can be seen as the region with most dense MrtLrt Servies, highlighted by the darker red shade. 
+- We can also see that the Airbnb listings here are cluttered in this Central region, indicated by the darker blue shade. 
+
+
+**Advantage of Kernel Density Map over Point Map**:
+
+- For point maps, while some clustering can be identified, it is difficult to pin a number to the clusters. 
+- When there are large numbers of points, it may get difficult to count and calculate the actual figures.
+- The size of the points also has to be carefully selected to show the distribution.
+- The Kernel Density Map however, offers an advantage over Point Maps as it can show the intensity of clustering in areas that have undergone first order spatial point pattern analysis. 
+- This intensity, represented by the shades of colours, make it easier for users to understand that the brighter the colour, the denser the area is while the darker the colour, the lesser points / the less dense that area is, therefore highlighting the more important insights. 
+- It has the ability to offer information on the estimate of listings in the areas as well. 
+
+### 7.1.3 Compare Spatial Point Patterns Using KDE
+From the previous KDE Maps, we can observe that there are specific areas in the Central Region, such as Geylang, Kallang, Downtown Core and Rochor which have a higher density. Hence, we will look into these areas as intensive computational power is required to conduct a Second Order Analysis on all areas of Singapore.
+
+#### 7.1.3.1 Extract, Convert and Create Owin for Study Area
+The following code chunk will:
+
+- Extract the target area (Geylang, Kallang, Downtown and Rochor)
+- Convert Spatial Polygons Data Frame into generic sp format
+- Create owin object for each target area
+- The function also requires 2 arguments, sz (in this case our mpsz) and the specific planning area we are interested in.
+
+```{r echo=TRUE, eval=TRUE}
+get_study_area <- function(plsz, area) {
+  plsz[plsz$PLN_AREA_N == area,] %>%
+    as('Spatial') %>%
+    as('SpatialPolygons') %>%
+    as('owin')
+}
+```
+
+```{r echo=TRUE, eval=TRUE}
+gl_owin <- get_study_area(mpsz_sf, "GEYLANG")
+kl_owin <- get_study_area(mpsz_sf, "KALLANG")
+dc_owin <- get_study_area(mpsz_sf, "DOWNTOWN CORE")
+rc_owin <- get_study_area(mpsz_sf, "ROCHOR")
+```
+
+#### 7.1.3.2 Combining Spatial points and the study area
+```{r echo=TRUE, eval=TRUE}
+abbjun19_gl_ppp = abb_jun19_ppp_jit[gl_owin]
+hotels_gl_ppp = hotels_ppp_jit[gl_owin]
+tourism_gl_ppp = tourism_ppp_jit[gl_owin]
+mrtlrt_gl_ppp = mrtlrt_ppp[gl_owin]
+
+abbjun19_kl_ppp = abb_jun19_ppp_jit[kl_owin]
+hotels_kl_ppp = hotels_ppp_jit[kl_owin]
+tourism_kl_ppp = tourism_ppp_jit[kl_owin]
+mrtlrt_kl_ppp = mrtlrt_ppp[kl_owin]
+
+abbjun19_dc_ppp = abb_jun19_ppp_jit[dc_owin]
+hotels_dc_ppp = hotels_ppp_jit[dc_owin]
+tourism_dc_ppp = tourism_ppp_jit[dc_owin]
+mrtlrt_dc_ppp = mrtlrt_ppp[dc_owin]
+
+abbjun19_rc_ppp = abb_jun19_ppp_jit[rc_owin]
+hotels_rc_ppp = hotels_ppp_jit[rc_owin]
+tourism_rc_ppp = tourism_ppp_jit[rc_owin]
+mrtlrt_rc_ppp = mrtlrt_ppp[rc_owin]
+```
+
+#### 7.1.3.6 Rescale from metres to kilometres
+```{r echo=TRUE, eval=TRUE}
+abbjun19_gl_ppp.km = rescale(abbjun19_gl_ppp, 1000, "km")
+hotels_gl_ppp.km = rescale(hotels_gl_ppp, 1000, "km")
+tourism_gl_ppp.km = rescale(tourism_gl_ppp, 1000, "km")
+mrtlrt_gl_ppp.km = rescale(mrtlrt_gl_ppp, 1000, "km")
+
+abbjun19_kl_ppp.km = rescale(abbjun19_kl_ppp, 1000, "km")
+hotels_kl_ppp.km = rescale(hotels_kl_ppp, 1000, "km")
+tourism_kl_ppp.km = rescale(tourism_kl_ppp, 1000, "km")
+mrtlrt_kl_ppp.km = rescale(mrtlrt_kl_ppp, 1000, "km")
+
+abbjun19_dc_ppp.km = rescale(abbjun19_dc_ppp, 1000, "km")
+hotels_dc_ppp.km = rescale(hotels_dc_ppp, 1000, "km")
+tourism_dc_ppp.km = rescale(tourism_dc_ppp, 1000, "km")
+mrtlrt_dc_ppp.km = rescale(mrtlrt_dc_ppp, 1000, "km")
+
+abbjun19_rc_ppp.km = rescale(abbjun19_rc_ppp, 1000, "km")
+hotels_rc_ppp.km = rescale(hotels_rc_ppp, 1000, "km")
+tourism_rc_ppp.km = rescale(tourism_rc_ppp, 1000, "km")
+mrtlrt_rc_ppp.km = rescale(mrtlrt_rc_ppp, 1000, "km")
+```
+
+#### 7.1.3.7 Plot KDE Maps of the study area 
+```{r echo=TRUE, eval=TRUE, fig.width=12, fig.height=12, warning=FALSE}
+layout(matrix(c(1,2,3,4), 2, 2, byrow = TRUE), widths=c(5,5), heights=c(5,5))
+par(mfrow=c(2,2))
+plot(density(abbjun19_gl_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="quartic"), main="Geylang")
+plot(density(abbjun19_kl_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="quartic"), main="Kallang")
+plot(density(abbjun19_dc_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="quartic"), main="Downtown Core")
+plot(density(abbjun19_rc_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="quartic"), main="Rochor")
+```
+
+From the KDE plots above, it is easy to think that Rohor is the most dense area. However, we should not be too quick to judge as the intensity level of Rochor is lower than Downtown core and Geylang.
+
+#### 7.1.3.8 Plot Airbnb, Hotels, Mrt, Tourist Attraction in each area
+##### 7.1.3.8.1 Geylang
+
+```{r echo=TRUE, eval=TRUE, fig.width=10, fig.height=6}
+par(mfrow=c(2,2), mar=c(1,1,1,1))
+plot(abbjun19_gl_ppp.km, main = "Airbnb")
+plot(hotels_gl_ppp.km, main = "Hotels")
+plot(mrtlrt_gl_ppp.km, main = "Mrt")
+plot(tourism_gl_ppp.km, main = "Tourist Attractions")
+```
+
+From the plots above: 
+
+- Despite having a few Hotels around Geylang and only 1 tourist attraction there, there are still many more Airbnbs as compared to Hotels. 
+- This might be because of the convenience of transport, indicated by the 10 MRT stations in Geylang area.
+
+##### 7.1.3.8.2 Kallang
+
+```{r echo=TRUE, eval=TRUE, fig.width=10, fig.height=6}
+par(mfrow=c(2,2), mar=c(1,1,1,1))
+plot(abbjun19_kl_ppp.km, main = "Airbnb")
+plot(hotels_kl_ppp.km, main = "Hotels")
+plot(mrtlrt_kl_ppp.km, main = "Mrt")
+plot(tourism_kl_ppp.km, main = "Tourist Attractions")
+```
+
+From the plots above: 
+
+- Similarly, for Kallang area, despite having a few Hotels and only 1 tourist attraction there, there are still many more Airbnbs as compared to Hotels. 
+- This might be because of the convenience of transport, indicated by the 8 MRT stations in Kallang area.
+
+##### 7.1.3.8.3 Downtown Core
+```{r echo=TRUE, eval=TRUE, fig.width=10, fig.height=6}
+par(mfrow=c(2,2), mar=c(1,1,1,1))
+plot(abbjun19_dc_ppp.km, main = "Airbnb")
+plot(hotels_dc_ppp.km, main = "Hotels")
+plot(mrtlrt_dc_ppp.km, main = "Mrt")
+plot(tourism_dc_ppp.km, main = "Tourist Attractions")
+```
+
+From the plots above: 
+
+- For Downtown core, there are still many Airbnbs despite the number of hotels around it. 
+- However, apart from the access to the multiple MRTs, there are also quite a number of tourist attractions located in this area. 
+
+##### 7.1.3.8.4 Rochor
+```{r echo=TRUE, eval=TRUE, fig.width=10, fig.height=6}
+par(mfrow=c(2,2), mar=c(1,1,1,1))
+plot(abbjun19_rc_ppp.km, main = "Airbnb")
+plot(hotels_rc_ppp.km, main = "Hotels")
+plot(mrtlrt_rc_ppp.km, main = "Mrt")
+plot(tourism_rc_ppp.km, main = "Tourist Attractions")
+```
+
+From the plots above: 
+
+- For Rochor, the Airbnbs are more scattered across the area, aimilar to Hotels.
+- There are quite a few Mrt services and Tourist attractions in that area as well.
+
+
+Overall, below are the observations about the target areas and location factors:
+
+- There seems to be some relationship between the Airbnbs and Hotels as both the number of Airbnbs and Hotels are quite high. Hence, having a Hotel nearby might mean that there is a possibility of an Airbnb being located in that area. 
+- However, the accessibility of MRT is one of the possible factor that might affect the number of Airbnbs in the area. 
+- Only for Downtown Core area and Rochor, there might be some kind of relationship between the Airbnbs and Tourist Attractions. 
+
+## 7.2 Second-order Spatial Point Patterns Analysis
+
+To draw statistical conclusions on whether the distribution of Airbnb listings are affected by location factors such as hotels, tourist attractions and MRT services, we need to perform Second-order Spatial Point Analysis.
+
+- For this section, we will be focusing on 2 areas, Kallang and Downtown Core
+  - The presence of water catchment areas may skew the calculations, so for this exercise, we limit by planning subzone area.
+  - Here, we look at Downtown Core since there were many Airbnbs and tourist attractions located in that area.
+  - As Kallang and Downtown Core differ in terms of the number of MrtLrt in its area, we will only focus on these 2 areas for our analysis since Geylang and Kallang have similar observations.
+
+- Furthermore, since we are interested in investigating whether the distribution of Airbnb listings are affected by location factors, for e.g. whether the locations of MRT stations affect the distribution of Airbnb listing, we need to perform Multi-type Point Patterns Analysis. 
+- For this analysis, we will be using Cross L-Function.
+  - Although there are many functions, the most commonly used function is the L-function which is a transformed version of Ripley’s K-function. L-function is good because there is a red diagonal line in Ripley’s K-function which can be further transformed by deducting the distance for easier interpretation.
+
+### 7.2.1 Combine ppp objects
+```{r echo=TRUE, eval=TRUE}
+kl_ppp <- superimpose(kl_abbjun2019_mark=abbjun19_kl_ppp,
+                      kl_hotels_mark=hotels_kl_ppp,
+                      kl_tourism_mark=tourism_kl_ppp,
+                      kl_mrtlrt_mark=mrtlrt_kl_ppp)
+```
+
+```{r echo=TRUE, eval=TRUE}
+dc_ppp <- superimpose(dc_abbjun2019_mark=abbjun19_dc_ppp,
+                                    dc_hotels_mark=hotels_dc_ppp,
+                                    dc_tourism_mark=tourism_dc_ppp,
+                                    dc_mrtlrt_mark=mrtlrt_dc_ppp)
+```
+
+### 7.2.2 Multi-type Point Patterns Analysis: Cross L-Function
+```{r echo=TRUE, eval=TRUE}
+lcross <- function(data, i, j, title) {
+  compute <- Lcross(data, i, j, correction='border')
+  plot(compute, . - r ~ r, xlab="d", ylab="L(d)-r", main=title)
+}
+```
+
+### 7.2.2.1 Geylang
+```{r echo=TRUE, eval=TRUE, fig.width=15, fig.height=15, warning=FALSE}
+layout(matrix(c(1,2,3, 0), 2, 2, byrow = TRUE), widths=c(5,5), heights=c(5,5))
+par(mfrow=c(2,2))
+lcross(data = kl_ppp, i="kl_abbjun2019_mark", j="kl_hotels_mark", title="Airbnb 2019 & Hotels Lcross")
+lcross(data = kl_ppp, i="kl_abbjun2019_mark", j="kl_tourism_mark", title="Airbnb 2019 & Tourism Lcross")
+lcross(data = kl_ppp, i="kl_abbjun2019_mark", j="kl_mrtlrt_mark", title="Airbnb 2019 & MrtLrt Lcross")
+```
+
+### 7.2.2.2 Downtown Core
+```{r echo=TRUE, eval=TRUE, fig.width=15, fig.height=15, warning=FALSE}
+layout(matrix(c(1,2,3, 0), 2, 2, byrow = TRUE), widths=c(5,5), heights=c(5,5))
+par(mfrow=c(2,2))
+lcross(data = dc_ppp, i="dc_abbjun2019_mark", j="dc_hotels_mark", title="Airbnb 2019 & Hotels Lcross")
+lcross(data = dc_ppp, i="dc_abbjun2019_mark", j="dc_tourism_mark", title="Airbnb 2019 & Tourism Lcross")
+lcross(data = dc_ppp, i="dc_abbjun2019_mark", j="dc_mrtlrt_mark", title="Airbnb 2019 & MrtLrt Lcross")
+```
+
+Based on the plots of both Geylang and Downtown Core, 
+- It shows that there is a sign that the marked spatial point events are not independent spatially. 
+- However, a hypothesis test is required to confirm the observation statistically.
+
+### 7.2.3 Performing CSR testing on the Cross L-Function
+- The hypothesis and test are as follows:
+  - Ho = The distribution of Airbnbs in 2019 and location factors such as hotels, tourist attractions, MrtLrt services are spatially independent.
+  - H1 = The distribution of Airbnbs in 2019 and location factors such as hotels, tourist attractions, MrtLrt services are **NOT** spatially independent.
+- The null hypothesis will be rejected if p-value is smaller than alpha value of 0.1 (i.e. at 90% confidence interval) (This applies to all points events above.)
+
+- Note: I chose 90% confidence interval for this analysis as higher intervals would take a longer time to run. 
+
+#### 7.2.3.1 Monte Carlo test with Cross L-Function
+- *envelope()* of **spatstat** package is used to perform CSR test
+- As I chose 90% confidence interval, the number of simulations that will be run is 99+1 = 100.  
+- In the function below, we should indicate 99 as *nsim* argument since the first simulation is 0 and not 1. 
+- A global *set.seed()* is also used to ensure that the same output is computed each time the code is being ran. 
+- Note: *set.seed(1234)* is used for this analysis and is indicated at the top of this r markdown file together with the r setup settings. 
+
+
+```{r echo=TRUE, eval=TRUE}
+# Geylang
+abb2019_hotels_Lcross_kl.csr <- envelope(kl_ppp, Lcross,i="kl_abbjun2019_mark", j="kl_hotels_mark", correction='border', nsim=99)
+abb2019_tourism_Lcross_kl.csr <- envelope(kl_ppp, Lcross,i="kl_abbjun2019_mark", j="kl_tourism_mark",correction='border', nsim=99)
+abb2019_mrtlrt_Lcross_kl.csr <- envelope(kl_ppp, Lcross,i="kl_abbjun2019_mark", j="kl_mrtlrt_mark",correction='border', nsim=99)
+
+# Downtown Core
+abb2019_hotels_Lcross_dc.csr <- envelope(dc_ppp, Lcross,i="dc_abbjun2019_mark", j="dc_hotels_mark",correction='border', nsim=99)
+abb2019_tourism_Lcross_dc.csr <- envelope(dc_ppp, Lcross,i="dc_abbjun2019_mark", j="dc_tourism_mark",correction='border', nsim=99)
+abb2019_mrtlrt_Lcross_dc.csr <- envelope(dc_ppp, Lcross,i="dc_abbjun2019_mark", j="dc_mrtlrt_mark",correction='border', nsim=99)
+```
+
+### 7.2.4 Plot Cross L-Function
+
+- plot() is used to plot the simulated Cross L-Function
+
+#### 7.2.4.1 Plot Cross L-Function for Geylang
+```{r echo=TRUE, eval=TRUE, fig.width=15, fig.height=15, warning=FALSE}
+layout(matrix(c(1,2,3, 0), 2, 2, byrow = TRUE), widths=c(5,5), heights=c(5,5))
+par(mfrow=c(2,2))
+plot(abb2019_hotels_Lcross_kl.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2019_tourism_Lcross_kl.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2019_mrtlrt_Lcross_kl.csr, . -r ~ r, xlab="distance(m)")
+```
+
+Recall how we should read the plot:
+  - Red line represents the theoretical curve
+  - Black line represents the observed curve 
+  - Grey shaded area represents the envelope derived based on the simulation.
+
+For Geylang Airbnbs & Hotels:
+
+- For distance < 350, the black line(observed) is above the red line(theo) and it is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Hotels in Geylang are not spatially independent for this distance.
+- For 350 < distance < 380, the black line(observed) is lower than the red line(theo) and is within lower confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Hotels in Geylang are spatially independent for this distance.
+- For 380 < distance < 400, the black line(observed) is lower than the red line(theo) and is beyond the lower confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Hotels in Geylang are not spatially independent for this distance.
+
+
+For Geylang Airbnbs & Tourist Attractions:
+
+- For distance < 50, the black line(observed) is above than the red line(theo) and is within the confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Tourist Attractions in Geylang are spatially independent for this distance.
+- For 50 < distance < 100, the black line(observed) is above than the red line(theo) and is beyond the lower confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Tourist Attractions in Geylang are not spatially independent for this distance.
+- For 100 < distance < 400, the black line(observed) is within the confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Tourist Attractions in Geylang are spatially independent for this distance.
+
+
+For Geylang Airbnbs & Mrtlrt:
+
+- For 0 < distance < 400, the black line(observed) is within the confidence envelope, hence we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Mrtlrt in Geylang are spatially independent for this distance.
+
+#### 7.2.4.2 Plot Cross L-Function for Downtown Core
+```{r echo=TRUE, eval=TRUE, fig.width=15, fig.height=15, warning=FALSE}
+layout(matrix(c(1,2,3, 0), 2, 2, byrow = TRUE), widths=c(5,5), heights=c(5,5))
+par(mfrow=c(2,2))
+plot(abb2019_hotels_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2019_tourism_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2019_mrtlrt_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+```
+
+
+For Downtown Core Airbnbs & Hotels:
+
+- For distance < 10, the black line(observed) is above red line(theo) and it is within the upper confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Hotels in Downtown Core are spatially independent for this distance.
+- For 10 < distance < 150, the black line(observed) is above the red line(theo) and is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Hotels in Downtown Core are not spatially independent for this distance.
+- For 150 < distance < 180, the first half of the black line(observed) above the red line(theo)  while the second half of the black line(observed) is below the red line(theo). This blac line is the within the upper and lower confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Hotels in Downtown Core are spatially independent for this distance.
+- For 180 < distance < 300, the black line(observed) is below the red line(theo) and is beyond the lower confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Hotels in Downtown Core are not spatially independent for this distance.
+
+For Downtown Core Airbnbs & Tourist Attractions:
+
+- For distance < 50, the black line(observed) is below red line(theo) and it is within the lower confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Tourist Attractions in Downtown Core are spatially independent for this distance.
+- For 50 < distance < 320, the black line(observed) is below the red line(theo) and is beyond the lower confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Tourist Attractions in Downtown Core are not spatially independent for this distance.
+
+
+For Downtown Core Airbnbs & MrtLrt:
+
+- For distance < 50, the black line(observed) is below above the red line(theo) and is within the lower confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Mrtlrt in Downtown Core are spatially independent for this distance.
+- For 50 < distance < 80, the black line(observed) is above the red line(theo) and is within the upper confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Mrtlrt in Downtown Core are spatially independent for this distance.
+- For 80 < distance < 220, the black line(observed) is above the red line(theo) and is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Mrtlrt in Downtown Core are not spatially independent for this distance.
+- For 220 < distance < 280, the black line(observed) is above the red line(theo) and is within the upper confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Mrtlrt in Downtown Core are spatially independent for this distance.
+- For 280 < distance < 320, the black line(observed) is above the red line(theo) and is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnbs and Mrtlrt in Downtown Core are not spatially independent for this distance.
+
+
+
+To conclude this section, 
+
+- There are some sort of evidence that the location factors such as Hotels, Tourist attractions and MrtLrt services do affect the distribution of Airbnbs in 2019. 
+- However, this is only at certain distances. 
+- Here, we can clearly see that for Downtown Core, the Airbnbs in this area are more likely to be affected by all 3 factors depending on the distance.
+- However, for Geylang, the distribution might be affected by only 2 of the factors which is Hotels and Tourist attraction.
+- Hence, we have statistical conclusions that the 2 points are not spatially independent of the location factors.
+
+
+# 8. Section B: Impact of COVID-19
+
+- In Section B, we will only be focusing on the room_type field. Hence, we can drop the other variables that we are not interested in.
+- To ensure a fair comparison, we should also drop room types that do not exist in both 2019 and 2021 listings.
+- Out of all the results, we can be fully 90% confident that Geylang Airbnbs & Mrtlrt are spatially independent.
+
+## 8.1 Keep only required columns for analysis
+```{r echo=TRUE, eval=TRUE}
+keep <- c("room_type","latitude", "longtitude") # list of col names
+abb_jun19 <- abb_jun19[,(names(abb_jun19) %in% keep)] #remove columns 
+glimpse(abb_jun19)
+```
+
+```{r echo=TRUE, eval=TRUE}
+keep <- c("room_type","latitude", "longtitude") # list of col names
+abb_jun21 <- abb_jun21[,(names(abb_jun21) %in% keep)] #remove columns 
+glimpse(abb_jun21)
+```
+
+## 8.2 Determine the unique room type
+
+The following code chunks will help us check the unique room types using unique feature of base R:
+
+```{r echo=TRUE, eval=TRUE}
+unique(abb_jun19$room_type)
+```
+
+```{r echo=TRUE, eval=TRUE}
+unique(abb_jun21$room_type)
+```
+
+From the results above,
+
+- There are 3 room types in Airbnb 2019: Private room, Entire home/apt and Shared room
+- There are 4 room types in Airbnb 2021: Private room, Entire home/apt, Shared room and Hotel room.
+- With further research: the definition of these room types are:
+  - Entire home/apt: Guests have the whole place to themselves which usually includes a bedroom, a bathroom, and a kitchen. 
+  - Private room: In contrast to Entire Home, guests have their own private room for sleeping. 
+  - Shared room: Guests sleep in a common bedrrom that could be shared with others. 
+  - Hotel room: Hotels listed on Airbnb
+- To ensure a fair comparison, we will exclude Hotel room from Airbnb 2021 in the following code chunk:
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun21 <- abb_jun21[!abb_jun21$room_type == "Hotel room", ]
+unique(abb_jun21$room_type)
+```
+
+## 8.3 Check marked field data type and convert to factor
+
+- str() of Base R will be used to check the data type of both abb_jun19 and abb_jun21 SpatialPointsDataFrame. 
+
+```{r echo=TRUE, eval=TRUE}
+str(abb_jun19)
+str(abb_jun21)
+```
+
+The output above shows that **`room_type`**  field is in character data type and not in factor data type as required by spatstat package. 
+Hence, the code chunk below will be used to convert **`room_type`** field to **factor** data type.
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun19@data$room_type <- as.factor(abb_jun19@data$room_type)
+abb_jun21@data$room_type <- as.factor(abb_jun21@data$room_type)
+```
+
+## 8.4 Exploratory Spatial Data Analysis
+### 8.4.1 Standardise colour palettes 
+
+The following code chunks will help us assign specific colours to the unique room types for us to visualise and differentiate the room types easily.  
+
+```{r echo=TRUE, eval=TRUE}
+roomtype_colours = c(`Entire home/apt`='lightgreen', `Private room`='plum', `Shared room`='coral')
+```
+
+### 8.4.2 Plot Airbnb listings Maps by room_type
+
+In Singapore, there are generally 5 regions demarcated by the Urban Redevelopment Authority of Singapore to aid in its planning efforts. The regions are identified as:
+
+- Central Region
+- East Region
+- North Region
+- North-East Region
+- West Region
+
+#### 8.4.2.1 Plot Airbnb 2019 listings Map by room_type
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+tm_basemap("OpenStreetMap") +
+  tm_shape(abb_jun19) +
+  tm_dots(col = "room_type", 
+          size = 0.02, 
+          alpha = 0.8,
+          palette=roomtype_colours) + 
+  tm_view(text.size.variable = 1, view.legend.position = c("right", "bottom"))
+tmap_mode('plot')
+```
+
+```{r echo=TRUE, fig.width=20, fig_height=20}
+tm_shape(mpsz) +
+  tm_borders(alpha = 0.5) +
+tm_shape(abb_jun19) +
+  tm_dots(col = 'room_type', 
+          size = 0.5,
+          palette=roomtype_colours) +
+tm_facets(by="room_type")+
+  tm_scale_bar() + 
+  tm_layout(asp=1, outer.margins = 0) 
+```
+
+**Spatial Pattern Observations from Airbnb listings 2019**: 
+
+- At a quick glance, we can roughly see that the concentration of Private rooms (plum) is the highest while the concentration of Shared rooms (coral) is the lowest. 
+- Entire homes/apt (lightgreen) are more commonly found throughout the Central, North-East and East regions.
+- Private rooms (plum) are found throughout the 5 regions - North, North-East, West, East and Central regions.
+- Shared rooms (coral) are *sparsely* scattered throughout 5 regions - North, South, East, West and Central regions.
+- A higher concentration of Entire homes/apts (lightgreen) rooms can be found in the Central region while higher concentrations of Private rooms (plum) are found in the Central, North-East and East regions.
+- For Shared rooms (coral), there is a mix of locations where some Shared rooms are at random locations while others are more concentrated at the Central region.
+
+- From the map, it seems that Private rooms (plum) and Entire homes/apts (lightgreen) display a higher chance of clustering while Shared rooms (coral) display randomness.
+- Just by looking at the exploratory map, it is difficult to draw meaningful observations of clustering, dispersion or random that are true to the behavior of spatial points.
+
+
+#### 8.4.2.2 Plot Airbnb 2021 listings Map by room_type
+```{r echo=TRUE, eval=TRUE}
+tmap_mode("view")
+tm_basemap("OpenStreetMap") +
+  tm_shape(abb_jun21) +
+  tm_dots(col = "room_type", 
+          size = 0.02, 
+          alpha = 0.8,
+          palette=roomtype_colours) + 
+  tm_view(text.size.variable = 1, view.legend.position = c("right", "bottom"))
+tmap_mode('plot')
+```
+
+
+```{r echo=TRUE, fig.width=15, fig_height=20}
+tm_shape(mpsz) +
+  tm_borders(alpha = 0.5) +
+tm_shape(abb_jun21) +
+  tm_dots(col = 'room_type', 
+          size = 0.5,
+          palette=roomtype_colours) +
+tm_facets(by="room_type")+
+  tm_scale_bar() + 
+  tm_layout(asp=1, outer.margins = 0) 
+```
+
+**Spatial Pattern Observations from Airbnb listings 2021**: 
+
+Compared to the patterns observed in 2019 listings, there are few different observations that can be made:
+
+- At a quick glance, we can roughly see that the concentration of Private rooms (plum) is the highest while the concentration of Shared rooms (coral) is the lowest. 
+- Entire homes/apt (lightgreen) are more commonly found throughout the Central and East regions.
+- Private rooms (plum) are found throughout the 5 regions - North, North-East, West, East and Central regions.
+- Shared rooms (coral) are sparsely scattered throughout the 5 regions - North, North-East, West, East and Central regions.
+- A higher concentration of Entire homes/apts (lightgreen) rooms can be found in the Central region while higher concentrations of Private rooms (plum) are found in the Central, North-East and East regions.
+- For Shared rooms (coral), there is a mix of locations where some Shared rooms are at random locations while others are more concentrated at the Central region.
+
+**Comparing Spatial Pattern Observations of 2019 and 2021**: 
+
+- The concentrations of airbnb listings of all the room_types except hotel rooms of 2021 are much lesser compared the concentrations of rooms in 2019. 
+- Specifically, Entire homes/apt rooms (lightgreen) listings in 2021 are much less concentrated in the Central region as compared to 2019.
+- Similarly, Private rooms (plum) listings in 2021 are much less concentrated in the North and Central region as compared to 2019.  
+- Underlying reason here might be because of the ongoing pandemic that we are experiencing right now. 
+
+
+## 8.5 Spatial Data Wrangling
+
+### 8.5.1 Converting the SpatialPointsDataFrame into ppp format
+
+#### 8.5.1.1 Airbnb 2019 listings
+```{r echo=TRUE, eval=TRUE}
+abb_jun19_ppp <- as(abb_jun19, "ppp")
+plot(abb_jun19_ppp, which.marks = "room_type")
+```
+
+Figure above reveals that there are 3 sub-rooms in the marks list. They are: Entire home/apt, Private room and Shared room. 
+
+#### 8.5.1.2 Airbnb 2021 listings
+```{r echo=TRUE, eval=TRUE}
+abb_jun21_ppp <- as(abb_jun21, "ppp")
+plot(abb_jun21_ppp, which.marks = "room_type")
+```
+
+Figure above reveals that there are 3 sub-rooms in the marks list. They are: Entire home/apt, Private room and Shared room. 
+
+### 8.5.2 Summary of ppp objects
+
+To examine the summary statistics of this spatial object, summary() of Base R will be used as shown in the code chunk below:
+
+#### 8.5.2.1 Summary of abb_jun19_ppp object
+```{r echo=TRUE, eval=TRUE}
+summary(abb_jun19_ppp)
+```
+
+The report above reveals that for AirBnb 2019 listings, **Entire home/apt** is the largest room type with Airbnb listings in Singapore with a market share of 51%. This is followed by Private room and Shared room.
+
+#### 8.5.2.2 Summary of abb_jun21_ppp object
+```{r echo=TRUE, eval=TRUE}
+summary(abb_jun21_ppp)
+```
+
+The report above reveals that for AirBnb 2021 listings, **Private room** is the largest room type with Airbnb listings in Singapore with a market share of 50%. This is followed by Entire home/apt and Shared room.
+
+
+It is also important to note that both the Airbnb 2019 and 2021 spatial point objects contains duplicated points. The quality of our analysis will be compromised if we failed to resolve this data issue. Hence, we will be resolving this issue in the following code chunk. 
+
+### 8.5.3 Resolve duplicate issue with Jittering method
+```{r echo=TRUE, eval=TRUE}
+abb_jun19_ppp_jit <- rjitter(abb_jun19_ppp, retry=TRUE, nsim=1, drop=TRUE)
+any(duplicated(abb_jun19_ppp_jit))
+
+abb_jun21_ppp_jit <- rjitter(abb_jun21_ppp, retry=TRUE, nsim=1, drop=TRUE)
+any(duplicated(abb_jun21_ppp_jit))
+```
+
+### 8.5.4 Creating owin
+- The presence of water catchment areas may skew the calculations, so for this analysis, we limit by planning subzone area.
+- Here, we look at Downtown Core since there were many Airbnbs and tourist attractions located in that area.
+
+#### 8.5.4.1 Extracting study area
+```{r echo=TRUE, eval=TRUE}
+dc = mpsz[mpsz@data$PLN_AREA_N == "DOWNTOWN CORE",]
+plot(dc, main = "Downtown Core")
+```
+
+
+#### 8.5.4.2 Converting the spatial point data frame into generic sp format
+- Here we will convert these SpatialPolygonsDataFrame layers into generic spatialpolygons layers by using as.SpatialPolygons.tess(x) of maptools package.
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+dc_sp = as(dc, "SpatialPolygons")
+```
+:::
+::: {.panel}
+## str {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+str(dc_sp)
+```
+:::
+:::::
+
+
+#### 8.5.4.3 Creating owin object
+- We will convert these SpatialPolygons objects into owin objects that is required by spatstat.
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+dc_owin = as(dc_sp, "owin")
+```
+:::
+::: {.panel}
+## str {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+str(dc_owin)
+```
+:::
+:::::
+
+
+#### 8.5.4.4 Combining Airbnb points and the study area
+```{r echo=TRUE, eval=TRUE}
+abbjun19_dc_ppp = abb_jun19_ppp_jit[dc_owin]
+summary(abbjun19_dc_ppp)
+
+abbjun21_dc_ppp = abb_jun21_ppp_jit[dc_owin]
+summary(abbjun21_dc_ppp)
+```
+
+#### 8.5.4.5 Plotting Airbnb points and the study area
+```{r echo=TRUE, eval=TRUE, fig.width=8}
+par(mfrow=c(1,2))
+plot(abbjun19_dc_ppp)
+plot(abbjun21_dc_ppp)
+```
+
+## 8.6 First Order Spatial Point Pattern Analysis
+
+### 8.6.1 Plot KDE Maps
+
+- In the code chunk below, density() of spatstat package is used to compute the kernel density objects. 
+- Then, plot() is used to plot the output kernel density objects derived. 
+- Instead of writing them in two seperate lines, the code chunk below shows how they can be combined into one single line code chunk. 
+
+```{r echo=TRUE, eval=TRUE, fig.width=8}
+plot(density((split(rescale(abbjun19_dc_ppp, 1000))), sigma=bw.diggle, edge=TRUE, kernel="quartic"),main="KDE Maps of Airbnb 2019 Room types")
+plot(density((split(rescale(abbjun21_dc_ppp, 1000))), sigma=bw.diggle, edge=TRUE, kernel="quartic"),main="KDE Maps of Airbnb 2021 Room types")
+```
+From the KDE Maps above, 
+
+- **For 2019 Airbnb listings**, 
+  - Entire home/apt rooms are more concentrated at the South-west of Downtown Core area. The intensity however is the highest out of the other 2 types of rooms and it is close to 2500 and 3000.
+  - Private homes have 3 concentrated areas in the North, Southwest and Central of Downtown Core area. The Central area however, is the most dense with a brighter yellow shade.
+  - Shared rooms are not that concentrated in this area however, as we can see from the darker blue shade.
+  
+- **For 2021 Airbnb listings**, 
+  - Similar observations can be made for 2021 listings for Entire home/apt rooms as it is also more concentrated at the South-west of Downtown Core area. The intensity however has dropped to 1200 from the previous 3000.
+  - Here, the most obvious change can be seen from the KDE Map of Private homes as the previous  3 concentrated areas are longer found in 2021 KDE Map for Private homes. However, we must also note that the intensity scale did change quite largely from 200 to 2000. This might mean that because of COVID 19, there are much more Private homes listed as Airbnb however, it is too early to confirm this.
+  - Shared rooms in 2021 can be found concentrated in North and Central West of Downtown Core. However, the intensity scale dropped drastically from 200 to 14.
+
+### 8.6.2 Reveal the density of Airbnbs by room types 
+```{r echo=TRUE, eval=TRUE}
+intensity(rescale(abbjun19_dc_ppp, 1000))
+intensity(rescale(abbjun21_dc_ppp, 1000))
+```
+
+The output reveals that in Downtown Core area, both the Entire home/apt rooms for Airbnb 2019 and 2021 listings has the highest density of 77.43 units per km square and 32.67 units per km square respectively. This is followed by Private Rooms for both 2019 and 2021, with 25.06 and 21.26 units per km square and Shared Rooms for both 2019 and 2021, with 2.69 and 0.67 units per km square.
+
+
+### 8.6.5 Plot KDE Maps on openstreetmap of Singapore
+#### 8.6.5.1 Extract each room type from SpatialPointsDataFrame
+```{r echo=TRUE, eval=TRUE}
+abb2019_pr <- abb_jun19[abb_jun19@data$room_type == "Private room",]
+abb2019_er <- abb_jun19[abb_jun19@data$room_type == "Entire home/apt",]
+abb2019_sr <- abb_jun19[abb_jun19@data$room_type == "Private room",]
+
+abb2021_pr <- abb_jun21[abb_jun21@data$room_type == "Private room",]
+abb2021_er <- abb_jun21[abb_jun21@data$room_type == "Entire home/apt",]
+abb2021_sr <- abb_jun21[abb_jun21@data$room_type == "Private room",]
+```
+
+#### 8.6.5.2 Converting the Spatial* class into generic sp format
+```{r echo=TRUE, eval=TRUE}
+abb2019_pr_sp <- as(abb2019_pr, "SpatialPoints")
+abb2019_er_sp <- as(abb2019_er, "SpatialPoints")
+abb2019_sr_sp <- as(abb2019_sr, "SpatialPoints")
+
+abb2021_pr_sp <- as(abb2021_pr, "SpatialPoints")
+abb2021_er_sp <- as(abb2021_er, "SpatialPoints")
+abb2021_sr_sp <- as(abb2021_sr, "SpatialPoints")
+```
+
+#### 8.6.3.3 Converting the generic sp format into spatstat’s ppp format
+```{r echo=TRUE, eval=TRUE}
+abb2019_pr_ppp <- as(abb2019_pr_sp, "ppp")
+abb2019_er_ppp <- as(abb2019_er_sp, "ppp")
+abb2019_sr_ppp <- as(abb2019_sr_sp, "ppp")
+
+abb2021_pr_ppp <- as(abb2021_pr_sp, "ppp")
+abb2021_er_ppp <- as(abb2021_er_sp, "ppp")
+abb2021_sr_ppp <- as(abb2021_sr_sp, "ppp")
+```
+
+#### 8.6.3.4 Check for duplicates in each ppp’s objects
+```{r echo=TRUE, eval=TRUE}
+any(duplicated(abb2019_pr_ppp))
+any(duplicated(abb2019_er_ppp))
+any(duplicated(abb2019_sr_ppp))
+
+any(duplicated(abb2021_pr_ppp))
+any(duplicated(abb2021_er_ppp))
+any(duplicated(abb2021_sr_ppp))
+```
+
+All ppp object except abb2019_pr_ppp and abb2019_sr_ppp have duplicates.
+
+#### 8.6.3.5 Handle duplicates and check again
+```{r echo=TRUE, eval=TRUE}
+abb2019_pr_ppp_jit <- rjitter(abb2019_pr_ppp, retry=TRUE, nsim=1, drop=TRUE)
+abb2019_er_ppp_jit <- rjitter(abb2019_er_ppp, retry=TRUE, nsim=1, drop=TRUE)
+abb2019_sr_ppp_jit <- rjitter(abb2019_sr_ppp, retry=TRUE, nsim=1, drop=TRUE)
+
+abb2021_pr_ppp_jit <- rjitter(abb2021_pr_ppp, retry=TRUE, nsim=1, drop=TRUE)
+abb2021_er_ppp_jit <- rjitter(abb2021_er_ppp, retry=TRUE, nsim=1, drop=TRUE)
+abb2021_sr_ppp_jit <- rjitter(abb2021_sr_ppp, retry=TRUE, nsim=1, drop=TRUE)
+
+any(duplicated(abb2019_pr_ppp_jit))
+any(duplicated(abb2019_er_ppp_jit))
+any(duplicated(abb2019_sr_ppp_jit))
+
+any(duplicated(abb2021_pr_ppp_jit))
+any(duplicated(abb2021_er_ppp_jit))
+any(duplicated(abb2021_sr_ppp_jit))
+```
+
+#### 8.6.3.6 Combining point events object and owin object
+```{r echo=TRUE, eval=TRUE}
+abb2019_pr_ppp = abb2019_pr_ppp_jit[sg_owin]
+abb2019_er_ppp = abb2019_er_ppp_jit[sg_owin]
+abb2019_sr_ppp = abb2019_sr_ppp_jit[sg_owin]
+
+abb2021_pr_ppp = abb2021_pr_ppp_jit[sg_owin]
+abb2021_er_ppp = abb2021_er_ppp_jit[sg_owin]
+abb2021_sr_ppp = abb2021_sr_ppp_jit[sg_owin]
+```
+
+#### 8.6.3.7 Compute KDE
+```{r echo=TRUE, eval=TRUE, warning=FALSE}
+kde_abb2019_pr_bw <- density(abb2019_pr_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+kde_abb2019_er_bw <- density(abb2019_er_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+kde_abb2019_sr_bw <- density(abb2019_sr_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+
+kde_abb2021_pr_bw <- density(abb2021_pr_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+kde_abb2021_er_bw <- density(abb2021_er_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+kde_abb2021_sr_bw <- density(abb2021_sr_ppp, sigma=bw.diggle, edge=TRUE, kernel="quartic")
+```
+
+#### 8.6.3.8 Convert KDE output into grid object
+```{r echo=TRUE, eval=TRUE}
+gridded_kde_abb2019_pr_bw <- as.SpatialGridDataFrame.im(kde_abb2019_pr_bw)
+gridded_kde_abb2019_er_bw <- as.SpatialGridDataFrame.im(kde_abb2019_er_bw)
+gridded_kde_abb2019_sr_bw <- as.SpatialGridDataFrame.im(kde_abb2019_sr_bw)
+
+gridded_kde_abb2021_pr_bw <- as.SpatialGridDataFrame.im(kde_abb2021_pr_bw)
+gridded_kde_abb2021_er_bw <- as.SpatialGridDataFrame.im(kde_abb2021_er_bw)
+gridded_kde_abb2021_sr_bw <- as.SpatialGridDataFrame.im(kde_abb2021_sr_bw)
+```
+
+#### 8.6.3.9 Convert grid object into raster and assign project system
+```{r echo=TRUE, eval=TRUE}
+kde_abb2019_pr_bw_raster <- raster(gridded_kde_abb2019_pr_bw)
+kde_abb2019_er_bw_raster <- raster(gridded_kde_abb2019_er_bw)
+kde_abb2019_sr_bw_raster <- raster(gridded_kde_abb2019_sr_bw)
+projection(kde_abb2019_pr_bw_raster) <- CRS("+init=EPSG:3414")
+projection(kde_abb2019_er_bw_raster) <- CRS("+init=EPSG:3414")
+projection(kde_abb2019_sr_bw_raster) <- CRS("+init=EPSG:3414")
+
+kde_abb2021_pr_bw_raster <- raster(gridded_kde_abb2021_pr_bw)
+kde_abb2021_er_bw_raster <- raster(gridded_kde_abb2021_er_bw)
+kde_abb2021_sr_bw_raster <- raster(gridded_kde_abb2021_sr_bw)
+projection(kde_abb2021_pr_bw_raster) <- CRS("+init=EPSG:3414")
+projection(kde_abb2021_er_bw_raster) <- CRS("+init=EPSG:3414")
+projection(kde_abb2021_sr_bw_raster) <- CRS("+init=EPSG:3414")
+```
+
+Check that Raster has been assigned correct CRS:
+
+```{r echo=TRUE, eval=TRUE}
+kde_abb2019_pr_bw_raster
+kde_abb2019_er_bw_raster
+kde_abb2019_sr_bw_raster
+
+kde_abb2021_pr_bw_raster
+kde_abb2021_er_bw_raster
+kde_abb2021_sr_bw_raster
+```
+
+
+
+#### 8.6.3.10 Visualise output in openstreetmap
+##### 8.6.3.10.1 Private Room Airbnb 2019 and 2021
+
+```{r echo=TRUE, eval=TRUE}
+plot_oms(kde_abb2019_pr_bw_raster, kde_abb2021_pr_bw_raster, "Private Room 2019", "Private Room 2021")
+tmap_mode('plot')
+```
+
+**Spatial patterns observed**:
+
+- The concentration of Private Rooms for both years are not high. 
+- There are more private rooms in more areas in 2019 as compared to 2021 as we can see more red shades than blue shades.
+- The areas shaded in purple (combination of red and blue), are those areas where there are significant concentrations of 2019 and 2021 Private Rooms listings. These areas are found obvious near Kallang and People's Park.
+- Other not so obvious areas are found in Little India, Selegie, Golden Mile and near Pasir Panjang where 2019 listings can be found.
+
+##### 8.6.3.10.2 Entire home/apt Airbnb 2019 and 2021
+
+```{r echo=TRUE, eval=TRUE}
+plot_oms(kde_abb2019_er_bw_raster, kde_abb2021_er_bw_raster, "Entire home/apt 2019", "Entire home/apt 2021")
+tmap_mode('plot')
+```
+
+**Spatial patterns observed**:
+
+- Here, we can see that there are more listings for Entire home/apt scattered across the Central region as compared to the previous map about Airbnb private rooms.
+- Entire home/apt for 2021 listings have more listings in other areas as compared to 2019.
+- The concentrations for both 2019 and 2021 Entire home/apt listings can be found near areas like Geylang, Kallang and Tanjong Pagar.
+
+
+##### 8.6.3.10.3 Shared Room Airbnb 2019 and 2021
+
+```{r echo=TRUE, eval=TRUE}
+plot_oms(kde_abb2019_sr_bw_raster, kde_abb2021_sr_bw_raster, "Shared Room 2019", "Shared Room 2021")
+tmap_mode('plot')
+```
+
+**Spatial patterns observed**:
+
+- Airbnb shared rooms for 2019 and 2021 listings are more concentrated within areas in Southeast area of the Central region such as People’s Park, Little India and Geylang.
+- In 2019, the shared rooms are more concentrated in People Park and Kallang area as compared to Little India which is highlighted by a lighter shade of red. 
+- The shared rooms in 2021 are more concentrated at areas like Little India and People Park.
+- This might signify the impact of COVID 19, where it shows that lesser Airbnb listings for shared room in Kallang but more in Little India in 2021. 
+
+
+## 8.7 Second-order Spatial Point Patterns Analysis
+### 8.7.1 Combine ppp objects with owin object
+```{r echo=TRUE, eval=TRUE}
+abb2019_pr_ppp_dc = abb2019_pr_ppp_jit[dc_owin]
+abb2019_er_ppp_dc = abb2019_er_ppp_jit[dc_owin]
+abb2019_sr_ppp_dc = abb2019_sr_ppp_jit[dc_owin]
+
+abb2021_pr_ppp_dc = abb2021_pr_ppp_jit[dc_owin]
+abb2021_er_ppp_dc = abb2021_er_ppp_jit[dc_owin]
+abb2021_sr_ppp_dc = abb2021_sr_ppp_jit[dc_owin]
+```
+
+### 8.7.2 Combine ppp objects
+```{r echo=TRUE, eval=TRUE}
+dc_ppp_s2 <- superimpose(abb2019_pr_dc_mark=abb2019_pr_ppp_dc,
+                      abb2019_er_dc_mark=abb2019_er_ppp_dc,
+                      abb2019_sr_dc_mark=abb2019_sr_ppp_dc,
+                      
+                      abb2021_pr_dc_mark=abb2021_pr_ppp_dc,
+                      abb2021_er_dc_mark=abb2021_er_ppp_dc,
+                      abb2021_sr_dc_mark=abb2021_sr_ppp_dc)
+```
+
+### 8.7.3 Multi-type Point Patterns Analysis: Cross L-Function
+```{r echo=TRUE, eval=TRUE, fig.width=15, fig.height=15, warning=FALSE}
+layout(matrix(c(1,2,3,4,5,6), 3, 2, byrow = TRUE), widths=c(7,7), heights=c(7,7))
+par(mfrow=c(3,2))
+lcross(data = dc_ppp_s2, i="abb2019_pr_dc_mark", j="abb2019_er_dc_mark", title="PR 2019 & ER 2019")
+lcross(data = dc_ppp_s2, i="abb2019_pr_dc_mark", j="abb2019_sr_dc_mark", title="PR 2019 & SR 2019")
+lcross(data = dc_ppp_s2, i="abb2019_sr_dc_mark", j="abb2019_er_dc_mark", title="SR 2019 & ER 2019")
+
+lcross(data = dc_ppp_s2, i="abb2021_pr_dc_mark", j="abb2021_er_dc_mark", title="PR 2021 & ER 2021")
+lcross(data = dc_ppp_s2, i="abb2021_pr_dc_mark", j="abb2021_sr_dc_mark", title="PR 2021 & SR 2021")
+lcross(data = dc_ppp_s2, i="abb2021_sr_dc_mark", j="abb2021_er_dc_mark", title="SR 2021 & ER 2021")
+```
+
+Based on the plots above, 
+
+- It shows that there is a sign that the marked spatial point events are not independent spatially. 
+- However, a hypothesis test is required to confirm the observation statistically.
+
+### 8.7.4 Performing CSR testing on the Cross L-Function
+- The hypothesis and test are as follows:
+  - Ho = The distribution of the room_type_a listings and  room_type_b listings are spatially independent in Downtown Core area are spatially independent.
+  - H1 = The distribution of the room_type_a listings and  room_type_b listings are spatially independent in Downtown Core area are **NOT** spatially independent.
+- The null hypothesis will be rejected if p-value is smaller than alpha value of 0.1 (i.e. at 90% confident interval). 
+- The above hypothesis applies for the following pairs of points (room_type_a & room_type_b):
+  - Airbnb 2019 Private rooms &  Airbnb 2019 Entire home/apt rooms
+  - Airbnb 2019 Private rooms &  Airbnb 2019 Shared rooms
+  - Airbnb 2019 Shared rooms &  Airbnb 2019 Entire home/apt rooms
+  - Airbnb 2021 Private rooms &  Airbnb 2021 Entire home/apt rooms
+  - Airbnb 2021 Private rooms &  Airbnb 2021 Shared rooms
+  - Airbnb 2021 Shared rooms &  Airbnb 2021 Entire home/apt rooms
+
+#### 8.7.4.1 Monte Carlo test with Cross L-Function
+- *envelope()* of **spatstat** package is used to perform CSR test
+- As I chose 90% confidence interval, the number of simulations that will be run is 99+1 = 100.  
+- In the function below, we should indicate 99 as *nsim* argument since the first simulation is 0 and not 1. 
+- A global *set.seed()* is also used to ensure that the same output is computed each time the code is being ran. 
+- Note: *set.seed(1234)* is used for this analysis and is indicated at the top of this r markdown file together with the r setup settings. 
+
+```{r echo=TRUE, eval=TRUE}
+abb2019pr_abb2019er_Lcross_dc.csr <- envelope(dc_ppp_s2, Lcross,
+                                               i="abb2019_pr_dc_mark", j="abb2019_er_dc_mark",
+                                              correction='border', nsim=99)
+abb2019pr_abb2019sr_Lcross_dc.csr <- envelope(dc_ppp_s2, Lcross,
+                                               i="abb2019_pr_dc_mark", j="abb2019_sr_dc_mark",
+                                              correction='border', nsim=99)
+abb2019sr_abb2019er_Lcross_dc.csr <- envelope(dc_ppp_s2, Lcross,
+                                               i="abb2019_sr_dc_mark", j="abb2019_er_dc_mark",
+                                              correction='border', nsim=99)
+
+
+abb2021pr_abb2021er_Lcross_dc.csr <- envelope(dc_ppp_s2, Lcross,
+                                               i="abb2021_pr_dc_mark", j="abb2021_er_dc_mark",
+                                              correction='border', nsim=99)
+abb2021pr_abb2021sr_Lcross_dc.csr <- envelope(dc_ppp_s2, Lcross,
+                                               i="abb2021_pr_dc_mark", j="abb2021_sr_dc_mark",
+                                              correction='border', nsim=99)
+abb2021sr_abb2021er_Lcross_dc.csr <- envelope(dc_ppp_s2, Lcross,
+                                               i="abb2021_sr_dc_mark", j="abb2021_er_dc_mark",
+                                              correction='border', nsim=99)
+```
+
+
+### 8.7.5 Plot Cross L-Function
+
+- plot() is used to plot the simulated Cross L-Function
+
+```{r echo=TRUE, eval=TRUE, fig.width=15, fig.height=15, warning=FALSE}
+layout(matrix(c(1,2,3,4,5,6), 3, 2, byrow = TRUE), widths=c(7,7), heights=c(7,7))
+par(mfrow=c(3,2))
+plot(abb2019pr_abb2019er_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2019pr_abb2019sr_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2019sr_abb2019er_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+
+plot(abb2021pr_abb2021er_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2021pr_abb2021sr_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+plot(abb2021sr_abb2021er_Lcross_dc.csr, . -r ~ r, xlab="distance(m)")
+```
+
+### 8.7.6 Conclusions for Second-order Point Patterns Analysis: Cross L-Function
+
+- Recall how we should read the plot:
+  - Red line represents the theoretical curve
+  - Black line represents the observed curve 
+  - Grey shaded area represents the envelope derived based on the simulation.
+  
+#### 8.7.6.1 Private rooms and Entire home/apt rooms 2019 vs 2021
+
+For Airbnb 2019 Private rooms &  Airbnb 2019 Entire home/apt rooms:
+
+- For distance < 250, the black line(observed) is above the red line(theo) and it is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnb 2019 Private rooms &  Airbnb 2019 Entire home/apt rooms are not spatially independent for this distance.
+- For 250 < distance < 350, the black line(observed) is within confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2019 Private rooms &  Airbnb 2019 Entire home/apt rooms are spatially independent for this distance.
+
+
+For Airbnb 2021 Private rooms &  Airbnb 2021 Entire home/apt rooms: 
+
+- For distance < 20, the black line(observed) is above the red line(theo) and it is within the upper confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Private rooms &  Airbnb 2021 Entire home/apt rooms are spatially independent for this distance.
+- For 20 < distance < 150, the black line(observed) is above the red line(theo) and it is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Private rooms &  Airbnb 2021 Entire home/apt rooms are not spatially independent for this distance.
+- For 150 < distance < 220, the black line(observed) is within the confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Private rooms &  Airbnb 2021 Entire home/apt rooms are spatially independent for this distance.
+
+
+
+
+
+#### 8.7.6.2 Private rooms and Shared rooms 2019 vs 2021
+
+For Airbnb 2019 Private rooms &  Airbnb 2019 Shared rooms: 
+
+- For distance < 250, the black line(observed) is above the red line(theo) and it is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnb 2019 Private rooms &  Airbnb 2019 Shared rooms are not spatially independent for this distance.
+- For 250 < distance < 350, the black line(observed) is within confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2019 Private rooms &  Airbnb 2019 Shared rooms are spatially independent for this distance.
+
+
+For Airbnb 2021 Private rooms &  Airbnb 2021 Shared rooms: 
+
+- For distance < 180, the black line(observed) is above the red line(theo) and it is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Private rooms &  Airbnb 2021 Shared rooms are not spatially independent for this distance.
+- For 180 < distance < 250, the black line(observed) is within confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Private rooms &  Airbnb 2021 Shared rooms are spatially independent for this distance.
+
+
+#### 8.7.6.3 Shared rooms and Entire home/apt rooms 2019 vs 2021
+
+For Airbnb 2019 Shared rooms &  Airbnb 2019 Entire home/apt rooms: 
+
+- For distance < 5, the black line(observed) is above the red line(theo) and it is within the upper confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2019 Shared rooms &  Airbnb 2019 Entire home/apt rooms are spatially independent for this distance.
+- For 5 < distance < 210 and > 250, the black line(observed) is above the red line(theo) and it is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnb 2019 Shared rooms &  Airbnb 2019 Entire home/apt rooms are not spatially independent for this distance.
+- For 210 < distance < 240, the black line(observed) is above the red line(theo) and it is within the confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2019 Shared rooms &  Airbnb 2019 Entire home/apt rooms are spatially independent for this distance.
+
+
+For Airbnb 2021 Shared rooms &  Airbnb 2021 Entire home/apt rooms: 
+
+- For distance < 5, the black line(observed) is above the red line(theo) and it is within the upper confidence envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Shared rooms &  Airbnb 2021 Entire home/apt rooms are spatially independent for this distance.
+- For 5 < distance < 150, the black line(observed) is above the red line(theo) and it is beyond the upper confidence envelope, we **reject** the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Shared rooms &  Airbnb 2021 Entire home/apt rooms are not spatially independent for this distance.
+- For 150 < distance < 220, the black line(observed) is within the 2021 envelope, we cannot reject the null hypothesis at 90% confidence interval. We conclude that Airbnb 2021 Shared rooms &  Airbnb 2019 Entire home/apt rooms are spatially independent for this distance.
+
+
+Comparing the 2019 and 2021 listings by room types, 
+
+- For Private rooms and Entire home/apt rooms in 2019 and 2021, the distance that we can reject the null hypothesis has dropped from <250 to <150.
+- For Private rooms and Shared rooms in 2019 and 2021, the distance that we can reject the null hypothesis has dropped from <250 to <180.
+-For Shared rooms and Entire home/apt rooms in 2019 and 2021, the distance that we can reject the null hypothesis has dropped from 5 < distance < 210 to 5 < distance < 150.
+- Seeing how all the distances of the spatial independence of room types in 2021 has dropped from 2019, we can conclude that COVID-19 indeed had a significant impact on Airbnb's business in Singapore's Downtown Core area.
+
+
+# 9. Conclusion for Section A and B
+
+Overall, the spatial patterns observed may be due to how near these Airbnb listings are to the location factors. As Airbnb are commonly used by tourists, tourists may choose to stay in Airbnb that are more convenient for them to travel around Singapore. Hence due to the demand, there are more listings around the Center and South regions of Singapore which are also where the tourist attractions or hotspots are in Singapore. 
+
+Additionally, for Singaporeans who may want to find an Airbnb to stay temporarily, likely because of moving houses or having a staycation. Hence, if they were to find an Airbnb to stay in, it is most likely near Town/CBD or the South regions as it is more convenient for them to go to work or again, where the shopping paradise is or places of interest are at. 
+
+As for the COVID 19 Impact on Airbnbs, we saw for ourselves that there are generally lesser Airbnb listings in 2021 as compared to 2019. This might be due to the travel restrictions where tourists are not able to enter Singapore anymore and also the COVID-19 regulations where the owners of the Airbnbs are less willing to rent out their rooms because of the fear of the rising cases. Also, since the distances for Downtown Core has dropped significantly as seen from the different room types of Airbnb listings in 2021, based on this sample, we can say that we can safely conclude that COVID-19 has made it much more difficult for Airbnb business to operate in Singapore.
+
+
+# 10. References
+- Department of Computer Science, Worcester Polytechnic Institute. (2019, March 29). Scalable Kernel Density Estimation-based Local Outlier Detection over Large Data Streams∗. Retrieved from: https://openproceedings.org/2019/conf/edbt/EDBT19_paper_115.pdf
+- Gimond, M. (n.d.). Chapter 11 point pattern analysis | Intro to GIS and spatial analysis. Main repos | mgimond.github.io. Retrieved from: https://mgimond.github.io/Spatial/chp11_0.html#distance-based-analysis
+- Solymosi, R., & Medina, J. (2021, April 28). Chapter 6 studying spatial point patterns | Crime mapping in R. GitHub Pages. Retrieved from:  https://maczokni.github.io/crime_mapping_textbook/studying-spatial-point-patterns.html
+- Tin Seong.K (2021, September 06) Hands-on Exercise 4: Spatial Point Patterns Analysis-spatstat methods. Retrieved from: https://is415.netlify.app/hands-on_ex/hands-on_ex04/hands-on_ex04-sppa
+- Tin Seong.K (2021, September 13)Hands-on Exercise 5: Analysing Marked Point Patterns. Retrieved from: https://is415.netlify.app/hands-on_ex/hands-on_ex05/hands-on_ex05-markedsppa
+
+
+
 
