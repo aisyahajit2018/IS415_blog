@@ -1,0 +1,566 @@
+---
+title: "Take-home Exercise 2"
+description: |
+  This take home exercise aims to investigate the distribution of Airbnb listings and how location factors affect it as well as the impact of COVID-19 pandemic on Airbnb business.
+author:
+  - name: Nor Aisyah
+    url: https://www.linkedin.com/in/nor-aisyah/
+date: 10-01-2021
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+set.seed(1234)
+```
+
+# 1. Background Information
+
+This analysis aims to investigate if the distribution of Airbnb listings are affected by location factors such as near to existing hotels, MRT services and tourist attractions and analyse the impact of COVID-19 on Airbnb business in Singapore. 
+
+
+# 2. Dataset
+
+- **Aspatial dataset**: 
+  - Airbnb listings as at June **2019** downloaded from eLearn 
+  - Airbnb listings as at June **2021**, specifically 29 June, 2021.csv from [Inside Airbnb](http://insideairbnb.com/get-the-data.html) under show archived data
+  - Hotels
+  - Tourist attractions
+  
+- **Geospatial dataset**:
+  - MRTLRT services
+  - **CoastalOutline**: a polygon feature data showing the national boundary of Singapore. It is provided by SLA and is in ESRI shapefile format.
+  - **MP14_SUBZONE_WEB_PL**: a polygon feature data providing information of URA 2014 Master Plan Planning Subzone boundary data. It is in ESRI shapefile format. This data set was also downloaded from Data.gov.sg.
+
+**Note***: 
+
+- There were some issues with a few of the datasets. 
+- For Airbnb listings as at June 2019, this dataset is provided by Prof. Kam as the dataset no longer exist on Inside Airbnb website.
+- For Hotels, Tourist attractions and MRT services, 
+  - The original plan was to download it from SLA OneMap Service by using onemapsgapi.
+  - However, as there were some issues with creating a onemap account due to the maintenance issue, Prof. Kam has kindly provided us with the data in CSV format. 
+  
+# 3. Install and Load R packages 
+
+This code chunk performs 3 tasks:
+
+- A list called packages will be created and will consists of all the R packages required to accomplish this hands-on exercise.
+- Check if R packages on package have been installed in R and if not, they will be installed.
+- After all the R packages have been installed, they will be loaded.  
+
+```{r echo=TRUE, eval=TRUE}
+packages <- c('sf', 'tidyverse', 'tmap', 'rgdal', 'maptools', 'raster','spatstat', 'kableExtra', 'devtools')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+```{r echo=TRUE, eval=TRUE, results="hide"}
+devtools::install_github("gadenbuie/xaringanExtra")
+library(xaringanExtra)
+```
+
+```{r panelset, echo=FALSE}
+xaringanExtra::use_panelset()
+```
+
+More on the packages used:
+
+- **sf**: used for importing, managing, and processing **geospatial** data
+  - specifically **vector-based** geospatial data
+- **tidyverse**: used for importing, wrangling and visualising data. It consists of a family of R packages, such as:
+  - **readr** for importing csv data,
+  - **readxl** for importing Excel worksheet,
+  - **tidyr** for manipulating data,
+  - **dplyr** for transforming data, and
+  - **ggplot2** for visualising data
+- **tmap**: provides functions for plotting cartographic **quality** *static* point patterns maps or *interactive* maps by using leaflet API.
+- **maptools**: Manipulate geographic data.
+  - Will be used to convert spatial objects into ppp format of spatstat
+- **raster**: reads, writes, manipulates, analyses and model of gridded spatial data
+- **spatstat**: contains useful functions for point pattern analysis.
+  - Will be used to perform 1st- and 2nd-order spatial point patterns analysis and derive kernel density estimation (KDE) layer.
+- **gridExtra**: For arranging KDE maps when plotted into grid object
+
+- **kableExtra**: Designed to extend the basic functionality of tables. In this exercise, I will be using it to construct complex tables and customize styles using a readable syntax. 
+- **devtools**: used for installing any R packages which is not available in RCRAN. In this exercise, I will be installing using devtools to install the package **xaringanExtra** which is still under development stage. 
+- **xaringanExtra**: is an enhancement of xaringan package. As it is still under development stage, we can still install the current version using install_github function of devtools. This package will be used to add Panelsets to contain both the r code chunk and results whereever applicable.
+
+# 4. Importing and Wrangling Geospatial Data
+
+- The code chunks below uses **st_read()** of **sf** package to import the geospatial data sets
+- The imported shapefile will be a simple feature object of sf.
+- **st_crs()** of **sf** package will also be used to check the CRS.
+
+## 4.1 Import and check CRS
+### 4.1.1 CoastalOutline
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+sg_sf <- st_read(dsn = "data/geospatial", layer="CostalOutline")
+```
+:::
+::: {.panel}
+## st_crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(sg_sf)
+```
+:::
+:::::
+
+From the results above, we can see that:
+
+- **sg** has 60 features and 4 fields.  
+- The geometry type is polygon thus, when we convert it to a Spatial* class object later, we should keep in mind that the suitable class would be SpatialPolygons.  
+- The projected CRS for sg is SVY21. 
+- However, the EPSG code shown is 9001 which is wrong since the correct EPSG code for SVY21 should be 3414. 
+
+### 4.1.2 MPSZ
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+mpsz_sf <- st_read(dsn = "data/geospatial", layer="MP14_SUBZONE_WEB_PL")
+```
+:::
+::: {.panel}
+## st_crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(mpsz_sf)
+```
+:::
+:::::
+
+From the results above, we can see that:
+
+- **mpsz** has 323 features and 15 fields.  
+- The geometry type is multipolygon. Similarly, when we convert it to a Spatial* class object later, we should keep in mind that the suitable class would be SpatialPolygons.  
+- The projected CRS for mpsz is also SVY21 but the EPSG code shown is 9001 which is wrong since the correct EPSG code for SVY21 should be 3414. 
+
+### 4.1.3 MRT
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+mrtlrt_sf <- st_read(dsn = "data/geospatial", layer="MRTLRTStnPtt")
+```
+:::
+::: {.panel}
+## st_crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(mrtlrt_sf)
+```
+:::
+:::::
+
+From the results above, we can see that:
+
+- **mrtlrt** has 185 features and 3 fields.  
+- The geometry type is point. So, Swhen we convert it to a Spatial* class object later, we should keep in mind that the suitable class would be SpatialPoints. 
+- Similar to sg and mpsz, the projected CRS for mrtlrt is also SVY21 but the EPSG code shown wrong. 
+
+
+Since all the projected CRS for the above sf dataframes is SVY21, we need to assign them the correct EPSG code which is 3414 in the next section.
+
+## 4.2 Assign EPSG code to sf dataframes and check
+### 4.2.1 Assign EPSG code to sg_sf
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+sg_sf <- st_set_crs(sg_sf, 3414)
+```
+:::
+::: {.panel}
+## st_crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(sg_sf)
+```
+:::
+:::::
+
+### 4.2.2 Assign EPSG code to mpsz_sf
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+mpsz_sf <- st_set_crs(mpsz_sf, 3414)
+```
+:::
+::: {.panel}
+## st_crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(mpsz_sf)
+```
+:::
+:::::
+
+### 4.2.3 Assign EPSG code to mrtlrt_sf
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+mrtlrt_sf <- st_set_crs(mrtlrt_sf, 3414)
+```
+:::
+::: {.panel}
+## st_crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(mrtlrt_sf)
+```
+:::
+:::::
+
+The CRS has now been correctly assigned for all 3 geospatial data.
+
+## 4.3 Check if geometries are valid
+
+- In the following code chunks, **st_is_valid()** is used to check for any invalid geometries.
+- We have to check this so that we make sure that each polygon doesn't break any topological rules and ideally, all of the geometries should be valid.
+
+```{r echo=TRUE, eval=TRUE}
+length(which(st_is_valid(sg_sf) == FALSE))
+length(which(st_is_valid(mpsz_sf) == FALSE))
+length(which(st_is_valid(mrtlrt_sf) == FALSE))
+```
+
+From the results above, there are:
+
+- 1 invalid geometries for sg_sf,
+- 9 invalid geometries for mpsz_sf,
+- 0 invalid geometries for mrtlrt_sf
+
+## 4.4 Handle the invalid geometries
+
+- The following code chunk uses **st_make_valid()** function to make the geometries valid for sg_sf and mpsz_sf
+
+```{r echo=TRUE, eval=TRUE}
+sg_sf <- st_make_valid(sg_sf)
+mpsz_sf <- st_make_valid(mpsz_sf)
+```
+
+```{r echo=TRUE, eval=TRUE}
+length(which(st_is_valid(sg_sf) == FALSE))
+length(which(st_is_valid(mpsz_sf) == FALSE))
+```
+
+Based on the results above, there are no longer any invalid geometries. 
+
+## 4.5 Mapping the geospatial layers
+```{r echo=TRUE, eval=TRUE}
+tm_shape(sg_sf) +
+  tm_polygons() +
+tm_shape(mpsz_sf) +
+  tm_borders(alpha = 0.5) +
+tm_shape(mrtlrt_sf) +
+  tm_dots(col="red", size=0.1)
+```
+
+- From the above map, we can see how the sg and mpsz differs.
+- The CoastalOutline, sg, contains polygons outlining the coast of mainland and offshore islands in Singapore, indicated by the border.
+- Whereas, the mpsz shows polygons of a subzone boundary, indicated by the polygons shaded in Grey.
+- Our MrtLrt services are also widely scattered across Singapore, with a relatively higher number of services found in the Central, West and Northeast region.
+
+
+# 5. Importing and Wrangling Aspatial Data
+## 5.1 Import and inspect aspatial data 
+- Here, we will be importing our aspatial data using *read_csv()* of **readr** package
+- Then, we will take a look at our aspatial data using **glimpse()** of **dplyr** package
+
+### 5.1.1 Airbnb listings as at June 2019
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+abb_jun19 <- read_csv("data/aspatial/30062019.csv")
+```
+:::
+::: {.panel}
+## glimpse {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+glimpse(abb_jun19)
+```
+:::
+:::::
+
+
+### 5.1.2 Airbnb listings as at June 2021
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+abb_jun21 <- read_csv("data/aspatial/listings.csv")
+```
+:::
+::: {.panel}
+## glimpse {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+glimpse(abb_jun21)
+```
+:::
+:::::
+
+
+### 5.1.3 Hotels
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+hotels <- read.csv("data/aspatial/hotels.csv")
+```
+:::
+::: {.panel}
+## glimpse {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+glimpse(hotels)
+```
+:::
+:::::
+
+
+### 5.1.3 Tourism
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+tourism <- read.csv("data/aspatial/tourism.csv")
+```
+:::
+::: {.panel}
+## glimpse {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+glimpse(tourism)
+```
+:::
+:::::
+
+
+From the above results, we can see that for:
+
+- **abb_jun19**:
+  - The data contains 8,293 rows and 16 columns. 
+  - The coordinates are in **`latitude`** and **`longitude`** columns.
+  
+- **abb_jun21**:
+  - The data contains 4,238 rows and 16 columns. 
+  - The coordinates are also in **`latitude`** and **`longitude`** columns.
+  
+- **hotels**:
+  - The data contains 422 rows and 9 columns. 
+  - The coordinates columns are in **`Lat`** and **`Lng`**.
+  
+- **tourism**:
+  - The data contains 107 rows and 17 columns. 
+  - Only tourism in particular has 2 geographic coordinates which are:
+    - **`LONGTITUDE`** and **`LATITUDE`**
+    - **`Lat`** and **`Lng`**
+    
+- Hence, since the coordinate columns are Latitude & Longtitude / Lat & Lng, their projected CRS will be WGS84. 
+- In the later section, we will need to:
+  - Assign them the respective EPSG code which is 4326
+  - Transform it to fit with our geospatial data, which is using SVY21 with EPSG code 3414.
+  
+  
+## 5.2 Check for NA values
+**NOTE**: 
+
+  - When checking for NA values across the whole data set, we should be careful and not be too quick to omit them. 
+  - It may give NA values under fields we will not be using, such as **`last_review`**. 
+    - This might be because the listing is new and does not have reviews, hence there is no date for last_review.
+  - Since we are more concerned with variables such as **`latitude`**, **`longitude`** and particularly **`room_type`** for Section B, we shall not remove the NA values if there are no NA values for these specific columns. 
+  
+### 5.2.1 Check for NA values in abb_jun19
+```{r echo=TRUE, eval=TRUE}
+colSums(is.na(abb_jun19))
+```
+
+From the above results, we can see that there are:
+
+- 3137 rows under the columns **`last_review`** and **`reviews_per_month`** with NA values.
+- 82 rows under **`host_name`** column with NA values.
+- 2 rows under **`name`** column with NA values.
+- As there are no NA values for the columns we are interested in, we shall not remove them.
+
+### 5.2.2 Check for NA values in abb_jun21
+```{r echo=TRUE, eval=TRUE}
+colSums(is.na(abb_jun21))
+```
+
+From the above results, we can see that there are:
+
+- 1759 rows under the columns **`last_review`** and **`reviews_per_month`**  with NA values.
+- 8 rows under **`host_name`** column with NA values.
+- Similar to June 2019's listings, since there are no NA values for the columns we are interested in, we shall not remove them.
+
+### 5.2.3 Check for NA values in hotels
+```{r echo=TRUE, eval=TRUE}
+colSums(is.na(hotels))
+```
+
+- We can see from the results above that hotels does not contain any NA values. 
+
+### 5.2.4 Check for NA values in tourism
+```{r echo=TRUE, eval=TRUE}
+colSums(is.na(tourism))
+```
+
+- We can see from the results above that the columns, **`LONGTITUDE`** and **`LATITUDE`**, contains NA values but the **`Lat`** and **`Lng`** columns does not contain any NA values.
+- We might also think that since **`Lat`** and **`Lng`** columns does not contain any NA values, we should use these columns as our coordinates instead.
+- However, we should not be too quick to decide on this and instead, look at the data closely.
+
+#### 5.2.4.1 Inspect NA values in tourism coordinates
+
+::::: {.panelset}
+::: {.panel}
+## Code Chunk {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+tourism_na <- tourism %>% 
+  filter_at(vars(LONGTITUDE, LATITUDE), any_vars(is.na(.)))
+```
+:::
+::: {.panel}
+## Head {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+kable(head(tourism_na)) %>%
+  kable_styling(latex_options="striped", full_width = F) %>%
+  scroll_box(width = "100%", height = "400px")
+```
+:::
+::::: 
+
+- From the results above, we can see that the tourism activity that has NA values for the **`LONGTITUDE`** and **`LATITUDE`** columns is **Cruises from Singapore**.
+- It does not belong to a specific location on the map since it might be outside of Singapore’s geographical boundaries. 
+- Additionally, although the values for the **`Lat`** and **`Lng`** columns are 0, having 0,0 coordinates can mean different things. 
+- Thus, we should remove this row from our dataframe.
+
+#### 5.2.4.2 Remove NA values
+```{r echo=TRUE, eval=TRUE}
+tourism <- tourism %>% 
+  filter_at(vars(LONGTITUDE, LATITUDE), any_vars(!is.na(.)))
+```
+
+#### 5.2.4.3 Check if NA value is removed
+```{r echo=TRUE, eval=TRUE}
+tourism_na <- tourism %>% 
+  filter_at(vars(LONGTITUDE, LATITUDE), any_vars(is.na(.)))
+
+nrow(tourism_na)
+```
+
+We can see from the above results that the row with NA value in the coordinates columns has been removed.
+
+## 5.3 Convert aspatial data frame into sf objects, assign and transform CRS
+- As mentioned earlier, the coordinate columns are in decimal degrees which means that they are using WGS84.
+- We will need to assign them the respective epsg code 4326 before before transforming it to 3414 - the epsg code for SVY21.
+
+```{r echo=TRUE, eval=TRUE}
+abb_jun19_sf <- st_as_sf(abb_jun19,
+                    coords = c("longitude", 
+                               "latitude"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+
+abb_jun21_sf <- st_as_sf(abb_jun21,
+                    coords = c("longitude", 
+                               "latitude"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+
+hotels_sf <- st_as_sf(hotels,
+                    coords = c("Lng", 
+                               "Lat"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+
+tourism_sf <- st_as_sf(tourism,
+                    coords = c("Lng", 
+                               "Lat"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+## 5.4. Check the respective CRS
+::::: {.panelset}
+::: {.panel}
+## abb_jun19_sf crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(abb_jun19_sf)
+```
+:::
+::: {.panel}
+## abb_jun21_sf crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(abb_jun21_sf)
+```
+:::
+::: {.panel}
+## hotels_sf crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(hotels_sf)
+```
+:::
+::: {.panel}
+## tourism_sf crs {.panel-name}
+```{r echo=TRUE, eval=TRUE}
+st_crs(tourism_sf)
+```
+:::
+::::: 
+
+
+## 5.5. Plotting it altogether 
+In the code chunks below, mapping functions of tmap package is used. 
+
+### 5.5.1 Plot map without abb_jun21
+- Here, we will plot SG Airbnb Jun 2019 listings, hotels, tourist attractions and MRT services to ensure that they are being assigned the right CRS.
+
+```{r echo=TRUE, eval=TRUE}
+tm_shape(sg_sf) +
+  tm_polygons() +
+tm_shape(mpsz_sf) +
+  tm_borders(alpha = 0.5) +
+  tmap_options(check.and.fix = TRUE) +
+tm_shape(mrtlrt_sf) +
+  tm_dots(col ="red",  size = 0.02) +
+tm_shape(abb_jun19_sf) +
+  tm_dots(col ="blue",  size = 0.02) +
+tm_shape(hotels_sf) +
+  tm_dots(col ="orange",  size = 0.02) +
+tm_shape(tourism_sf) +
+  tm_dots(col ="purple",  size = 0.02) +
+  
+tm_layout(title= 'Map of Airbnb 2019 listings with other location factors',
+          title.position = c('right', 'top'))
+```
+
+### 5.5.2 Plot map without abb_jun19
+- Here, we will plot SG Airbnb Jun 2021 listings, hotels, tourist attractions and MRT services to ensure that they are being assigned the right CRS.
+
+```{r echo=TRUE, eval=TRUE}
+tm_shape(sg_sf) +
+  tm_polygons() +
+tm_shape(mpsz_sf) +
+  tm_borders(alpha = 0.5) +
+  tmap_options(check.and.fix = TRUE) +
+tm_shape(mrtlrt_sf) +
+  tm_dots(col ="red",  size = 0.02) +
+tm_shape(abb_jun21_sf) +
+  tm_dots(col ="green",  size = 0.02) +
+tm_shape(hotels_sf) +
+  tm_dots(col ="orange",  size = 0.02) +
+tm_shape(tourism_sf) +
+  tm_dots(col ="purple",  size = 0.02) +
+  
+tm_layout(title= 'Map of Airbnb 2021 listings with other location factors',
+          title.position = c('right', 'top'))
+```
+
