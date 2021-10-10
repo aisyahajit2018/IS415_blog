@@ -30,7 +30,9 @@ navbar:
         - text: "Hands-on Exercise 7"
           href: https://aisyahajit2018-is415.netlify.app/posts/2021-09-26-hands-on-exercise-7/
         - text: "Hands-on Exercise 8"
-          href: 
+          href: https://aisyahajit2018-is415.netlify.app/posts/2021-10-10-hands-on-exercise-8/
+        - text: "Hands-on Exercise 9"
+          href:
           
     - text: "In-class Exercise"
       menu:
@@ -48,6 +50,8 @@ navbar:
           href: 
         - text: "In-class Exercise 8"
           href: 
+        - text: "In-class Exercise 9"
+          href:
           
     - text: "Home"
       href: index.html
