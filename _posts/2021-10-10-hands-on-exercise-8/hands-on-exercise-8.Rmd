@@ -752,3 +752,5 @@ shclust.map <- qtm(shan_sf_spatialcluster,
   tm_borders(alpha = 0.5) 
 tmap_arrange(hclust.map, shclust.map,
              asp=NA, ncol=2)
+```
+
