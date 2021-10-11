@@ -11,7 +11,6 @@ output:
     self_contained: false
 ---
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
@@ -753,6 +752,3 @@ shclust.map <- qtm(shan_sf_spatialcluster,
   tm_borders(alpha = 0.5) 
 tmap_arrange(hclust.map, shclust.map,
              asp=NA, ncol=2)
-```
-
-
