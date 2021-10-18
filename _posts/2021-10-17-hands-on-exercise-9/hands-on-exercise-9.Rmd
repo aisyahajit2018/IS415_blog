@@ -56,7 +56,9 @@ for (p in packages){
 
 More on the packages used: 
 
-- Geospatial statistical modelling package: **GWmodel**
+- Build OLD and performing diagnostic tests: **oslrr**
+- Calibrate geographical weighted family of modes: **GWmodel**
+- Multivariate data visualisation and analysis: **corrplot**
 - Spatial data handling: **sf**
 - Attribute data handling: **tidyverse**, especially **readr**, **ggplot2** and **dplyr**
 - Choropleth mapping: **tmap**
