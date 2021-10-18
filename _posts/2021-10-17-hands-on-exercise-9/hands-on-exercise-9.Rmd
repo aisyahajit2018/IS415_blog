@@ -238,8 +238,6 @@ Here, we will reveal the geospatial distribution condominium resale prices in Si
   - set.zoom.limits argument of tm_view() sets the minimum and maximum zoom level to 11 and 14 respectively.
 - Lastly, *tmap_mode("plot")* to display plot mode
 
-**Note: Display as plot mode for now**
-
 ```{r echo=TRUE, eval=TRUE}
 tmap_mode("plot")
 tm_shape(mpsz_svy21)+
@@ -252,6 +250,11 @@ tm_shape(condo_resale.sf) +
 tmap_mode("plot")
 ```
 
+- There is some error if you have the latest sf package when plotting the interactive view plot
+- If you want, you can install the specific package version
+  - require(devtools) 
+  - install_version("sf", version = "0.9-8")
+- For now, we will plot it as a plot first
 
 # 7 Hedonic Pricing Modelling in R
 ## 7.1 Simple Linear Regression Method
@@ -327,6 +330,7 @@ Results above show that:
 - **`Freehold`** is highly correlated to **`LEASE_99YEAR`**. 
 - Thus, it is wiser to only include either one of them in the subsequent model building. 
 - As a result, **`LEASE_99YEAR`** is excluded in the subsequent model building.
+-**`PROX_CHILDCARE`**  and **`PROX_BUS_STOP`** also has a high correlation
 
 ### 7.2.2 Build a hedonic pricing model using multiple linear regression method
 #### 7.2.2.1 Calibrate the multiple linear regression model
@@ -341,13 +345,24 @@ summary(condo.mlr)
 Results above show that:
 
 - **Not all** the independent variables are statistically significant. 
+  - Example: **`PROX_TOP_PRIMARY_SCH`** value is very high
+  - Example: **`PROX_SUPERMARKET`** value is high
+  - Example: **`PROX_HAWKER_MARKET`** value is high
 - We will revise the model by removing those variables which are not statistically significant.
+- Here, by adding more variables, the adjusted r square actually improved. 
+  - From the previous 0.45 increased to close to 0.64 percent.
+- How to interpret?
+  - If you hold the rest of the independent variables constant (**`AGE`** onwards), means that for 1 unit increase of **`AREA_SQM`**, the price will increase by +12708
+  - Similarly, for 1 unit increase of **`AGE`**, the resale price will drop by -24440 if we hold the other independent variables constant
+
 
 #### 7.2.2.2 Calibrate the revised model 
 ```{r echo=TRUE, eval=TRUE}
 condo.mlr1 <- lm(formula = SELLING_PRICE ~ AREA_SQM + AGE  + PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE  + PROX_URA_GROWTH_AREA + PROX_MRT  + PROX_PARK  + PROX_PRIMARY_SCH + PROX_SHOPPING_MALL  + PROX_BUS_STOP  + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, data=condo_resale.sf)
 ols_regress(condo.mlr1)
 ```
+
+- Herem our condo.mlr1  will contain the coefficients, residuals, effects and fitted values. We will be using the residuals and extract it as a dataframe later on to examine it closely.
 
 ### 7.2.3 Check for multicolinearity
 
@@ -362,7 +377,7 @@ When performing OLS regression, we can use:
   - model fit assessment
   - variable contribution assessment
   - variable selection procedures
-- the *ols_vif_tol()* of **olsrr** package is used to test if there are signs of multicollinearity.
+- the *ols_vif_tol()* of **olsrr** package is used to check if there are any strong signs of multicollinearity.
 
 ```{r echo=TRUE, eval=TRUE}
 ols_vif_tol(condo.mlr1)
@@ -418,7 +433,7 @@ Results above show that:
 
 #### 7.2.6.1 Export residual of hedonic pricing model
 
-- Export the residual of the hedonic pricing model and save it as a data frame.
+- **Extract the residual** of the hedonic pricing model and save it as a data frame.
 
 ```{r echo=TRUE, eval=TRUE}
 mlr.output <- as.data.frame(condo.mlr1$residuals)
@@ -434,6 +449,10 @@ condo_resale.res.sf <- cbind(condo_resale.sf,
 rename(`MLR_RES` = `condo.mlr1.residuals`)
 ```
 
+My notes:
+
+- MLR_RES will be used for mapping purposes or for Moran I. 
+
 #### 7.2.6.3 Convert to SpatialPointsDataFrame 
 
 - Convert **condo_resale.res.sf** simple feature object into a SpatialPointsDataFrame because **spdep** package can only process sp conformed spatial data objects
@@ -445,7 +464,7 @@ condo_resale.sp
 
 #### 7.2.6.4 Display interactive point symbol map
 
-**Note: it is currently in plot mode**
+**Note: it is currently in plot mode because of our sf package**
 
 ```{r echo=TRUE, eval=TRUE}
 tmap_mode("plot")
@@ -517,9 +536,10 @@ In this section, we will learn how to modelling hedonic pricing using both the f
 bw.fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  + PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE  + PROX_URA_GROWTH_AREA + PROX_MRT  + PROX_PARK  + PROX_PRIMARY_SCH + PROX_SHOPPING_MALL  + PROX_BUS_STOP  + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, data=condo_resale.sp, approach="CV", kernel="gaussian", adaptive=FALSE, longlat=FALSE)
 ```
 
-Results above show that:
 
-- The recommended bandwidth is 971.3398 metres.
+Results above show that:
+- The CV score is becoming smaller and smaller. 
+- The **recommended bandwidth is 971.3793 metres** as it converged and stabilised here with the CV score of 4.721292e+14.
 
 Quiz: Why is it in metres?
 
@@ -550,13 +570,23 @@ Calibrate the gwr-based hedonic pricing model by using **adaptive** bandwidth ap
 - Note: adaptive argument set to TRUE.
 
 ```{r echo=TRUE, eval=TRUE}
-bw.adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  + PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE  + PROX_URA_GROWTH_AREA + PROX_MRT  + PROX_PARK  + PROX_PRIMARY_SCH + PROX_SHOPPING_MALL  + PROX_BUS_STOP  + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, data=condo_resale.sp, approach="CV", kernel="gaussian",
-adaptive=TRUE, longlat=FALSE)
+bw.adaptive <- bw.gwr(formula = 
+                        SELLING_PRICE ~ 
+                        AREA_SQM + AGE  + PROX_CBD + 
+                        PROX_CHILDCARE + PROX_ELDERLYCARE  + PROX_URA_GROWTH_AREA + 
+                        PROX_MRT  + PROX_PARK  + PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + 
+                        PROX_BUS_STOP  + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, 
+                      data=condo_resale.sp, approach="CV", kernel="gaussian",
+                      adaptive=TRUE, longlat=FALSE)
 ```
 
 Results above show that:
 
 - **30** is the **recommended data points** to be used
+- You can further improve this by transforming it into a function and making the approach, kernel, adaptive as input
+parameters
+- When you have explicit projection, you set it longlat to FALSE. 
+  - If you set it to true, the algo will auto calculate it as Great Circle distances
 
 ### 8.2.2 Construct the adaptive bandwidth gwr model
 

@@ -2994,7 +2994,6 @@ Projected CRS: SVY21 / Singapore TM
 </ul></li>
 <li>Lastly, <em>tmap_mode(“plot”)</em> to display plot mode</li>
 </ul>
-<p><strong>Note: Display as plot mode for now</strong></p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tmap_mode</span><span class='op'>(</span><span class='st'>"plot"</span><span class='op'>)</span>
@@ -3013,6 +3012,15 @@ Projected CRS: SVY21 / Singapore TM
 </code></pre>
 </div>
 </div>
+<ul>
+<li>There is some error if you have the latest sf package when plotting the interactive view plot</li>
+<li>If you want, you can install the specific package version
+<ul>
+<li>require(devtools)</li>
+<li>install_version(“sf”, version = “0.9-8”)</li>
+</ul></li>
+<li>For now, we will plot it as a plot first</li>
+</ul>
 <h1 id="hedonic-pricing-modelling-in-r">7 Hedonic Pricing Modelling in R</h1>
 <h2 id="simple-linear-regression-method">7.1 Simple Linear Regression Method</h2>
 <h3 id="build-simple-linear-regression-model">7.1.1 Build Simple Linear Regression model</h3>
@@ -3109,7 +3117,7 @@ F-statistic:  1182 on 1 and 1434 DF,  p-value: &lt; 2.2e-16</code></pre>
 <ul>
 <li><strong><code>Freehold</code></strong> is highly correlated to <strong><code>LEASE_99YEAR</code></strong>.</li>
 <li>Thus, it is wiser to only include either one of them in the subsequent model building.</li>
-<li>As a result, <strong><code>LEASE_99YEAR</code></strong> is excluded in the subsequent model building.</li>
+<li>As a result, <strong><code>LEASE_99YEAR</code></strong> is excluded in the subsequent model building. -<strong><code>PROX_CHILDCARE</code></strong> and <strong><code>PROX_BUS_STOP</code></strong> also has a high correlation</li>
 </ul>
 <h3 id="build-a-hedonic-pricing-model-using-multiple-linear-regression-method">7.2.2 Build a hedonic pricing model using multiple linear regression method</h3>
 <h4 id="calibrate-the-multiple-linear-regression-model">7.2.2.1 Calibrate the multiple linear regression model</h4>
@@ -3165,8 +3173,22 @@ F-statistic: 147.4 on 18 and 1417 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 <p>Results above show that:</p>
 <ul>
-<li><strong>Not all</strong> the independent variables are statistically significant.</li>
+<li><strong>Not all</strong> the independent variables are statistically significant.
+<ul>
+<li>Example: <strong><code>PROX_TOP_PRIMARY_SCH</code></strong> value is very high</li>
+<li>Example: <strong><code>PROX_SUPERMARKET</code></strong> value is high</li>
+<li>Example: <strong><code>PROX_HAWKER_MARKET</code></strong> value is high</li>
+</ul></li>
 <li>We will revise the model by removing those variables which are not statistically significant.</li>
+<li>Here, by adding more variables, the adjusted r square actually improved.
+<ul>
+<li>From the previous 0.45 increased to close to 0.64 percent.</li>
+</ul></li>
+<li>How to interpret?
+<ul>
+<li>If you hold the rest of the independent variables constant (<strong><code>AGE</code></strong> onwards), means that for 1 unit increase of <strong><code>AREA_SQM</code></strong>, the price will increase by +12708</li>
+<li>Similarly, for 1 unit increase of <strong><code>AGE</code></strong>, the resale price will drop by -24440 if we hold the other independent variables constant</li>
+</ul></li>
 </ul>
 <h4 id="calibrate-the-revised-model">7.2.2.2 Calibrate the revised model</h4>
 <div class="layout-chunk" data-layout="l-body">
@@ -3217,6 +3239,9 @@ PROX_URA_GROWTH_AREA      39163.254     11754.829        0.060      3.332    0.0
             FREEHOLD     350599.812     48506.485        0.136      7.228    0.000     255447.802     445751.821 
 -----------------------------------------------------------------------------------------------------------------</code></pre>
 </div>
+<ul>
+<li>Herem our condo.mlr1 will contain the coefficients, residuals, effects and fitted values. We will be using the residuals and extract it as a dataframe later on to examine it closely.</li>
+</ul>
 <h3 id="check-for-multicolinearity">7.2.3 Check for multicolinearity</h3>
 <p>When performing OLS regression, we can use:</p>
 <ul>
@@ -3229,7 +3254,7 @@ PROX_URA_GROWTH_AREA      39163.254     11754.829        0.060      3.332    0.0
 <li>model fit assessment</li>
 <li>variable contribution assessment</li>
 <li>variable selection procedures</li>
-<li>the <em>ols_vif_tol()</em> of <strong>olsrr</strong> package is used to test if there are signs of multicollinearity.</li>
+<li>the <em>ols_vif_tol()</em> of <strong>olsrr</strong> package is used to check if there are any strong signs of multicollinearity.</li>
 </ul>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -3316,7 +3341,7 @@ Anderson-Darling         67.9551         0.0000
 </ul>
 <h4 id="export-residual-of-hedonic-pricing-model">7.2.6.1 Export residual of hedonic pricing model</h4>
 <ul>
-<li>Export the residual of the hedonic pricing model and save it as a data frame.</li>
+<li><strong>Extract the residual</strong> of the hedonic pricing model and save it as a data frame.</li>
 </ul>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -3336,6 +3361,10 @@ Anderson-Darling         67.9551         0.0000
 </code></pre>
 </div>
 </div>
+<p>My notes:</p>
+<ul>
+<li>MLR_RES will be used for mapping purposes or for Moran I.</li>
+</ul>
 <h4 id="convert-to-spatialpointsdataframe">7.2.6.3 Convert to SpatialPointsDataFrame</h4>
 <ul>
 <li>Convert <strong>condo_resale.res.sf</strong> simple feature object into a SpatialPointsDataFrame because <strong>spdep</strong> package can only process sp conformed spatial data objects</li>
@@ -3356,7 +3385,7 @@ min values  :    18965,        540000,       34,   0, 0.386916393,    0.00492702
 max values  :   828833,       1.8e+07,      619,  37, 19.18042832,     3.46572633,      3.949157205,           9.15540001,        5.374348075,       2.229045366,  3.48037319,  2.16104919,      3.928989144,          6.748192062,        3.477433767, ... </code></pre>
 </div>
 <h4 id="display-interactive-point-symbol-map">7.2.6.4 Display interactive point symbol map</h4>
-<p><strong>Note: it is currently in plot mode</strong></p>
+<p><strong>Note: it is currently in plot mode because of our sf package</strong></p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>tmap_mode</span><span class='op'>(</span><span class='st'>"plot"</span><span class='op'>)</span>
@@ -3557,10 +3586,7 @@ Fixed bandwidth: 971.3404 CV score: 4.721292e+14
 Fixed bandwidth: 971.3405 CV score: 4.721292e+14 
 Fixed bandwidth: 971.3405 CV score: 4.721292e+14 </code></pre>
 </div>
-<p>Results above show that:</p>
-<ul>
-<li>The recommended bandwidth is 971.3398 metres.</li>
-</ul>
+<p>Results above show that: - The CV score is becoming smaller and smaller. - The <strong>recommended bandwidth is 971.3793 metres</strong> as it converged and stabilised here with the CV score of 4.721292e+14.</p>
 <p>Quiz: Why is it in metres?</p>
 <ul>
 <li>The projection coordinated system is SVY21 which is in metres. That’s why the results is showing in metres.</li>
@@ -3580,7 +3606,7 @@ Fixed bandwidth: 971.3405 CV score: 4.721292e+14 </code></pre>
 <pre><code>   ***********************************************************************
    *                       Package   GWmodel                             *
    ***********************************************************************
-   Program starts at: 2021-10-18 10:17:53 
+   Program starts at: 2021-10-18 11:50:41 
    Call:
    gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
     PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -3688,7 +3714,7 @@ Fixed bandwidth: 971.3405 CV score: 4.721292e+14 </code></pre>
    Adjusted R-square value:  0.8430417 
 
    ***********************************************************************
-   Program stops at: 2021-10-18 10:17:55 </code></pre>
+   Program stops at: 2021-10-18 11:50:42 </code></pre>
 </div>
 <p>Results above show that:</p>
 <ul>
@@ -3703,8 +3729,14 @@ Fixed bandwidth: 971.3405 CV score: 4.721292e+14 </code></pre>
 </ul>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>bw.adaptive</span> <span class='op'>&lt;-</span> <span class='fu'>bw.gwr</span><span class='op'>(</span>formula <span class='op'>=</span> <span class='va'>SELLING_PRICE</span> <span class='op'>~</span> <span class='va'>AREA_SQM</span> <span class='op'>+</span> <span class='va'>AGE</span>  <span class='op'>+</span> <span class='va'>PROX_CBD</span> <span class='op'>+</span> <span class='va'>PROX_CHILDCARE</span> <span class='op'>+</span> <span class='va'>PROX_ELDERLYCARE</span>  <span class='op'>+</span> <span class='va'>PROX_URA_GROWTH_AREA</span> <span class='op'>+</span> <span class='va'>PROX_MRT</span>  <span class='op'>+</span> <span class='va'>PROX_PARK</span>  <span class='op'>+</span> <span class='va'>PROX_PRIMARY_SCH</span> <span class='op'>+</span> <span class='va'>PROX_SHOPPING_MALL</span>  <span class='op'>+</span> <span class='va'>PROX_BUS_STOP</span>  <span class='op'>+</span> <span class='va'>NO_Of_UNITS</span> <span class='op'>+</span> <span class='va'>FAMILY_FRIENDLY</span> <span class='op'>+</span> <span class='va'>FREEHOLD</span>, data<span class='op'>=</span><span class='va'>condo_resale.sp</span>, approach<span class='op'>=</span><span class='st'>"CV"</span>, kernel<span class='op'>=</span><span class='st'>"gaussian"</span>,
-adaptive<span class='op'>=</span><span class='cn'>TRUE</span>, longlat<span class='op'>=</span><span class='cn'>FALSE</span><span class='op'>)</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>bw.adaptive</span> <span class='op'>&lt;-</span> <span class='fu'>bw.gwr</span><span class='op'>(</span>formula <span class='op'>=</span> 
+                        <span class='va'>SELLING_PRICE</span> <span class='op'>~</span> 
+                        <span class='va'>AREA_SQM</span> <span class='op'>+</span> <span class='va'>AGE</span>  <span class='op'>+</span> <span class='va'>PROX_CBD</span> <span class='op'>+</span> 
+                        <span class='va'>PROX_CHILDCARE</span> <span class='op'>+</span> <span class='va'>PROX_ELDERLYCARE</span>  <span class='op'>+</span> <span class='va'>PROX_URA_GROWTH_AREA</span> <span class='op'>+</span> 
+                        <span class='va'>PROX_MRT</span>  <span class='op'>+</span> <span class='va'>PROX_PARK</span>  <span class='op'>+</span> <span class='va'>PROX_PRIMARY_SCH</span> <span class='op'>+</span> <span class='va'>PROX_SHOPPING_MALL</span> <span class='op'>+</span> 
+                        <span class='va'>PROX_BUS_STOP</span>  <span class='op'>+</span> <span class='va'>NO_Of_UNITS</span> <span class='op'>+</span> <span class='va'>FAMILY_FRIENDLY</span> <span class='op'>+</span> <span class='va'>FREEHOLD</span>, 
+                      data<span class='op'>=</span><span class='va'>condo_resale.sp</span>, approach<span class='op'>=</span><span class='st'>"CV"</span>, kernel<span class='op'>=</span><span class='st'>"gaussian"</span>,
+                      adaptive<span class='op'>=</span><span class='cn'>TRUE</span>, longlat<span class='op'>=</span><span class='cn'>FALSE</span><span class='op'>)</span>
 </code></pre>
 </div>
 <pre><code>Adaptive bandwidth: 895 CV score: 7.952401e+14 
@@ -3725,6 +3757,11 @@ Adaptive bandwidth: 30 CV score: 4.422088e+14 </code></pre>
 <p>Results above show that:</p>
 <ul>
 <li><strong>30</strong> is the <strong>recommended data points</strong> to be used</li>
+<li>You can further improve this by transforming it into a function and making the approach, kernel, adaptive as input parameters</li>
+<li>When you have explicit projection, you set it longlat to FALSE.
+<ul>
+<li>If you set it to true, the algo will auto calculate it as Great Circle distances</li>
+</ul></li>
 </ul>
 <h3 id="construct-the-adaptive-bandwidth-gwr-model">8.2.2 Construct the adaptive bandwidth gwr model</h3>
 <ul>
@@ -3740,7 +3777,7 @@ Adaptive bandwidth: 30 CV score: 4.422088e+14 </code></pre>
 <pre><code>   ***********************************************************************
    *                       Package   GWmodel                             *
    ***********************************************************************
-   Program starts at: 2021-10-18 10:18:06 
+   Program starts at: 2021-10-18 11:50:51 
    Call:
    gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
     PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -3848,7 +3885,7 @@ Adaptive bandwidth: 30 CV score: 4.422088e+14 </code></pre>
    Adjusted R-square value:  0.8561185 
 
    ***********************************************************************
-   Program stops at: 2021-10-18 10:18:08 </code></pre>
+   Program stops at: 2021-10-18 11:50:53 </code></pre>
 </div>
 <p>Results above show that:</p>
 <ul>
