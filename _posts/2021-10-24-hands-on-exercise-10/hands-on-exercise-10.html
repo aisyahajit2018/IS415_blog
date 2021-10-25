@@ -1538,7 +1538,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <li><a href="#origin-constrained-spatial-interaction-model">8.2 Origin Constrained Spatial Interaction Model</a>
 <ul>
 <li><a href="#calibrate-model">8.2.1 Calibrate model</a></li>
-<li><a href="#examine-how-contraints-hold-for-destinations">8.2.2 Examine how contraints hold for destinations</a>
+<li><a href="#examine-how-contraints-hold-for-origin">8.2.2 Examine how contraints hold for origin</a>
 <ul>
 <li><a href="#fit-model">8.2.2.1 Fit model</a></li>
 <li><a href="#turn-paired-list-into-matrix">8.2.2.2 Turn paired list into matrix</a></li>
@@ -1550,7 +1550,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <li><a href="#destination-constrained-spatial-interaction-model">8.3 Destination Constrained Spatial Interaction Model</a>
 <ul>
 <li><a href="#calibrate-model-1">8.3.1 Calibrate model</a></li>
-<li><a href="#examine-how-contraints-hold-for-destinations-1">8.3.2 Examine how contraints hold for destinations</a>
+<li><a href="#examine-how-contraints-hold-for-destinations">8.3.2 Examine how contraints hold for destinations</a>
 <ul>
 <li><a href="#fit-model-1">8.3.2.1 Fit model</a></li>
 <li><a href="#turn-paired-list-into-matrix-1">8.3.2.2 Turn paired list into matrix</a></li>
@@ -1562,7 +1562,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <li><a href="#doubly-constrained-spatial-interaction-model">8.4 Doubly Constrained Spatial Interaction Model</a>
 <ul>
 <li><a href="#calibrate-model-2">8.4.1 Calibrate model</a></li>
-<li><a href="#examine-how-contraints-hold-for-destinations-2">8.4.2 Examine how contraints hold for destinations</a>
+<li><a href="#examine-how-contraints-hold-for-origin-and-destinations">8.4.2 Examine how contraints hold for origin and destinations</a>
 <ul>
 <li><a href="#fit-model-2">8.4.2.1 Fit model</a></li>
 <li><a href="#turn-paired-list-into-matrix-2">8.4.2.2 Turn paired list into matrix</a></li>
@@ -2342,9 +2342,9 @@ AIC: 1209427
 
 Number of Fisher Scoring iterations: 6</code></pre>
 </div>
-<h3 id="examine-how-contraints-hold-for-destinations">8.2.2 Examine how contraints hold for destinations</h3>
+<h3 id="examine-how-contraints-hold-for-origin">8.2.2 Examine how contraints hold for origin</h3>
 <ul>
-<li>We can examine how the constraints hold for destinations this time.</li>
+<li>We can examine how the constraints hold for origin this time.</li>
 </ul>
 <h4 id="fit-model">8.2.2.1 Fit model</h4>
 <ul>
@@ -2522,7 +2522,7 @@ AIC: 668017
 
 Number of Fisher Scoring iterations: 5</code></pre>
 </div>
-<h3 id="examine-how-contraints-hold-for-destinations-1">8.3.2 Examine how contraints hold for destinations</h3>
+<h3 id="examine-how-contraints-hold-for-destinations">8.3.2 Examine how contraints hold for destinations</h3>
 <p>We can examine how the constraints hold for destinations this time.</p>
 <h4 id="fit-model-1">8.3.2.1 Fit model</h4>
 <p>Firstly, we will fit the model and roundup the estimated values.</p>
@@ -2704,8 +2704,8 @@ AIC: 337818
 
 Number of Fisher Scoring iterations: 6</code></pre>
 </div>
-<h3 id="examine-how-contraints-hold-for-destinations-2">8.4.2 Examine how contraints hold for destinations</h3>
-<p>We can examine how the constraints hold for destinations this time.</p>
+<h3 id="examine-how-contraints-hold-for-origin-and-destinations">8.4.2 Examine how contraints hold for origin and destinations</h3>
+<p>We can examine how the constraints hold for origin and destinations this time.</p>
 <h4 id="fit-model-2">8.4.2.1 Fit model</h4>
 <ul>
 <li>Firstly, we will fit the model and roundup the estimated values by using the code chunk below.</li>
@@ -2816,7 +2816,7 @@ Number of Fisher Scoring iterations: 6</code></pre>
 <p>Scatter plot above show that:</p>
 <ul>
 <li>The fitted values are <strong>highly correlated</strong> with the actual flow values.</li>
-<li>This show the Doubly Constrained Spatial Interaction Model is the <strong>best fit model</strong> among the four spatial interaction models.</li>
+<li>This show the Doubly Constrained Spatial Interaction Model is the <strong>best fit model</strong> among the 4 spatial interaction models.</li>
 </ul>
 <h3 id="assess-model-2">8.4.3 Assess model</h3>
 <p>To provide a quantitative assessment of the model, we can compute the <strong>Goodness-of-fit</strong> statistics.</p>

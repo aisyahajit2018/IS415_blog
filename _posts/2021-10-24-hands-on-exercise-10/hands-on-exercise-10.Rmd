@@ -405,9 +405,9 @@ origSim <- glm(Flow ~ Orig_code+log(wj3_destmedinc)+log(dist)-1, na.action = na.
 summary(origSim)
 ```
 
-### 8.2.2 Examine how contraints hold for destinations
+### 8.2.2 Examine how contraints hold for origin
 
-- We can examine how the constraints hold for destinations this time.
+- We can examine how the constraints hold for origin this time.
 
 #### 8.2.2.1 Fit model
 
@@ -529,9 +529,9 @@ doubSim <- glm(Flow ~ Orig_code+Dest_code+log(dist), na.action = na.exclude, fam
 summary(doubSim)
 ```
 
-### 8.4.2 Examine how contraints hold for destinations
+### 8.4.2 Examine how contraints hold for origin and destinations
 
-We can examine how the constraints hold for destinations this time. 
+We can examine how the constraints hold for origin and destinations this time. 
 
 #### 8.4.2.1 Fit model
 
@@ -572,7 +572,7 @@ ggplot(data=mdatasub,
 Scatter plot above show that:
 
 - The fitted values are **highly correlated** with the actual flow values. 
-- This show the Doubly Constrained Spatial Interaction Model is the **best fit model** among the four spatial interaction models.
+- This show the Doubly Constrained Spatial Interaction Model is the **best fit model** among the 4 spatial interaction models.
 
 ### 8.4.3 Assess model
 
