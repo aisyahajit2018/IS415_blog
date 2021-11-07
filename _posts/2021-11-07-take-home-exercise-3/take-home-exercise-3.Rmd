@@ -2156,11 +2156,11 @@ To conclude, the **hedonic pricing model** is the best model as it is able to ex
 
 The final explanatory variables used that contributed to this high percentage are:
 
-- Structural Factors like:
+- **Structural** Factors like:
 	- Floor area 
 	- Remaining lease
 	- Storey range
-- Locational Factors like:
+- **Locational** Factors like:
 	- Proximity to CBD
 	- Proximity to Elderlycare
 	- Proximity to Hawker
@@ -2171,7 +2171,7 @@ The final explanatory variables used that contributed to this high percentage ar
 	- Number of Kindergartens within 350 metres
 	- Number of Childcare within 350 metres
 	- Number of Bus stops within 350 metres
-	- Number of Primary Schools within 1 kilometres
+	- Number of Primary Schools within 1 kilometre
 
 # References
 
